@@ -11,7 +11,8 @@ class Company extends Model
         'name', 'email', 'phone', 'address', 'logo', 'plan', 
         'is_active', 'is_verified', 'max_users', 'max_storage_mb', 
         'subscription_expires_at', 'subscription_amount',
-        'email_verified_at', 'email_verification_token', 'email_verification_expires_at'
+        'email_verified_at', 'email_verification_token', 'email_verification_expires_at',
+        'chat_primary_color', 'chat_secondary_color', 'chat_theme_name'
     ];
 
     protected $casts = [

@@ -10,6 +10,11 @@
     <link href="/css/emoji-picker.css" rel="stylesheet">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
+        :root {
+            --chat-primary: {{ $chatTheme['primary_color'] }};
+            --chat-secondary: {{ $chatTheme['secondary_color'] }};
+            --chat-gradient: linear-gradient(135deg, {{ $chatTheme['primary_color'] }}, {{ $chatTheme['secondary_color'] }});
+        }
         body { background: #f0f2f5; }
         .chat-container { height: 100vh; background: white; }
         .user-list { 
@@ -50,8 +55,8 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         .message.sent .message-bubble { 
-            background: #dcf8c6;
-            color: #303030;
+            background: var(--chat-gradient);
+            color: white;
             border-bottom-right-radius: 4px;
         }
         .message.received .message-bubble { 
@@ -70,14 +75,14 @@
             background: #f5f6f7;
         }
         .user-item.active { 
-            background: #e3f2fd;
-            border-left: 4px solid #1976d2;
+            background: color-mix(in srgb, var(--chat-primary) 10%, white);
+            border-left: 4px solid var(--chat-primary);
         }
         .user-avatar { 
             width: 48px;
             height: 48px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--chat-gradient);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -144,13 +149,13 @@
         }
         
         #emojiBtn:hover {
-            color: #1976d2;
-            background: #f0f8ff;
+            color: var(--chat-primary);
+            background: color-mix(in srgb, var(--chat-primary) 10%, white);
         }
         
         #emojiBtn.active {
-            color: #1976d2;
-            background: #e3f2fd;
+            color: var(--chat-primary);
+            background: color-mix(in srgb, var(--chat-primary) 20%, white);
         }
         
         /* Emoji rendering in messages */
@@ -198,7 +203,7 @@
             margin-left: 5px;
         }
         .read-status.read {
-            color: #4fc3f7;
+            color: var(--chat-primary);
         }
         .file-message {
             padding: 8px 12px;
@@ -208,11 +213,11 @@
             margin-bottom: 5px;
         }
         .file-message a {
-            color: #1976d2;
+            color: var(--chat-primary);
             font-weight: 500;
         }
         .file-message a:hover {
-            color: #1565c0;
+            color: var(--chat-secondary);
         }
 
         /* Responsive Design */
@@ -391,7 +396,7 @@
             top: 0;
             left: 0;
             right: 0;
-            background: #1976d2;
+            background: var(--chat-gradient);
             color: white;
             padding: 10px 15px;
             z-index: 1001;
@@ -425,7 +430,7 @@
         <div class="row h-100">
             <!-- Users List -->
             <div class="col-md-4 col-lg-3 p-0 user-list">
-                <div class="p-3 bg-primary text-white">
+                <div class="p-3 text-white" style="background: var(--chat-gradient);">
                     <div class="d-flex justify-content-between align-items-center" id="header-desktop">
                         <div class="d-flex align-items-center">
                             <div class="me-3">
@@ -962,7 +967,7 @@
             currentGroup = null;
             
             const chatUserAvatar = document.querySelector('#chatHeader .user-avatar');
-            chatUserAvatar.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            chatUserAvatar.style.background = 'var(--chat-gradient)';
             
             if (user.profile_photo) {
                 chatUserAvatar.innerHTML = `<img src="/storage/${user.profile_photo}" class="w-100 h-100 rounded-circle" style="object-fit: cover;">`;
@@ -1092,7 +1097,7 @@
                 if (currentGroupId && !isSent && message.sender) {
                     const senderAvatar = message.sender.profile_photo ? 
                         `<img src="/storage/${message.sender.profile_photo}" class="rounded-circle" style="width: 24px; height: 24px; object-fit: cover;">` :
-                        `<div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 10px; font-weight: 600;">${message.sender.name.charAt(0).toUpperCase()}</div>`;
+                        `<div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; background: var(--chat-gradient); color: white; font-size: 10px; font-weight: 600;">${message.sender.name.charAt(0).toUpperCase()}</div>`;
                     
                     senderInfo = `<div class="d-flex align-items-center mb-2">
                         ${senderAvatar}
@@ -1352,7 +1357,7 @@
                 chatUserAvatar.style.background = 'transparent';
             } else {
                 chatUserAvatar.innerHTML = '<i class="fas fa-users"></i>';
-                chatUserAvatar.style.background = 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)';
+                chatUserAvatar.style.background = 'var(--chat-gradient)';
             }
             
             document.getElementById('chatUserName').textContent = group.name;
@@ -1718,11 +1723,11 @@
             if (currentGroupId && !isSent && message.sender) {
                 const senderAvatar = message.sender.profile_photo ? 
                     `<img src="/storage/${message.sender.profile_photo}" class="rounded-circle" style="width: 24px; height: 24px; object-fit: cover;">` :
-                    `<div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 10px; font-weight: 600;">${message.sender.name.charAt(0).toUpperCase()}</div>`;
+                    `<div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; background: var(--chat-gradient); color: white; font-size: 10px; font-weight: 600;">${message.sender.name.charAt(0).toUpperCase()}</div>`;
                 
                 senderInfo = `<div class="d-flex align-items-center mb-2">
                     ${senderAvatar}
-                    <span class="sender-name ms-2" style="font-size: 0.75rem; color: #667eea; font-weight: 600;">${message.sender.name}</span>
+                    <span class="sender-name ms-2" style="font-size: 0.75rem; color: var(--chat-primary); font-weight: 600;">${message.sender.name}</span>
                 </div>`;
             }
             

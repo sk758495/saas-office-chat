@@ -76,7 +76,15 @@ class ChatController extends Controller
                     ->orderBy('last_message_at', 'desc')
                     ->get();
 
-        return view('chat.index', compact('users', 'groups', 'chats'));
+        // Get company theme colors
+        $company = auth()->user()->company;
+        $chatTheme = [
+            'primary_color' => $company->chat_primary_color ?? '#ff6b35',
+            'secondary_color' => $company->chat_secondary_color ?? '#f7931e',
+            'theme_name' => $company->chat_theme_name ?? 'Orange Sunset'
+        ];
+        
+        return view('chat.index', compact('users', 'groups', 'chats', 'chatTheme'));
     }
 
     public function show($userId)

@@ -36,7 +36,8 @@ class DesignationController extends Controller
 
     public function edit(Designation $designation)
     {
-        $departments = Department::where('status', true)->get();
+        $company = auth('admin')->user()->company;
+        $departments = $company->departments()->where('status', true)->get();
         return view('admin.designations.edit', compact('designation', 'departments'));
     }
 

@@ -24,16 +24,17 @@ class GroupController extends Controller
             $group = Group::create([
                 'name' => $request->name,
                 'description' => $request->description,
-                'created_by' => Auth::id()
+                'created_by' => Auth::id(),
+                'company_id' => Auth::user()->company_id
             ]);
 
             // Add creator as admin
-            $group->members()->attach(Auth::id(), ['is_admin' => true, 'joined_at' => now()]);
+            $group->members()->attach(Auth::id(), ['role' => 'admin']);
             
             // Add selected members
             foreach ($request->members as $memberId) {
                 if ($memberId != Auth::id()) {
-                    $group->members()->attach($memberId, ['is_admin' => false, 'joined_at' => now()]);
+                    $group->members()->attach($memberId, ['role' => 'member']);
                 }
             }
 
@@ -162,7 +163,7 @@ class GroupController extends Controller
         
         // Check if current user is admin
         $membership = $group->members()->where('user_id', $currentUser->id)->first();
-        if (!$membership || !$membership->pivot->is_admin) {
+        if (!$membership || $membership->pivot->role !== 'admin') {
             return response()->json(['error' => 'Only admins can add members'], 403);
         }
 
@@ -179,7 +180,7 @@ class GroupController extends Controller
         
         // Check if current user is admin
         $membership = $group->members()->where('user_id', $currentUser->id)->first();
-        if (!$membership || !$membership->pivot->is_admin) {
+        if (!$membership || $membership->pivot->role !== 'admin') {
             return response()->json(['error' => 'Only admins can remove members'], 403);
         }
 
@@ -201,7 +202,7 @@ class GroupController extends Controller
         
         // Check if current user is admin
         $membership = $group->members()->where('user_id', $currentUser->id)->first();
-        if (!$membership || !$membership->pivot->is_admin) {
+        if (!$membership || $membership->pivot->role !== 'admin') {
             return response()->json(['error' => 'Only admins can make other users admin'], 403);
         }
 
@@ -212,7 +213,7 @@ class GroupController extends Controller
         }
 
         // Update user to admin
-        $group->members()->updateExistingPivot($request->user_id, ['is_admin' => true]);
+        $group->members()->updateExistingPivot($request->user_id, ['role' => 'admin']);
         
         return response()->json(['success' => true]);
     }
@@ -228,7 +229,7 @@ class GroupController extends Controller
         
         // Check if current user is admin
         $membership = $group->members()->where('user_id', $currentUser->id)->first();
-        if (!$membership || !$membership->pivot->is_admin) {
+        if (!$membership || $membership->pivot->role !== 'admin') {
             return response()->json(['error' => 'Only admins can update group photo'], 403);
         }
         

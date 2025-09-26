@@ -152,6 +152,24 @@ class CompanyController extends Controller
         return back()->with('error', 'Company is already on paid plan.');
     }
 
+    public function updateChatTheme(Request $request)
+    {
+        $request->validate([
+            'chat_primary_color' => 'required|string|max:7',
+            'chat_secondary_color' => 'required|string|max:7',
+            'chat_theme_name' => 'required|string|max:50'
+        ]);
+
+        $company = auth('admin')->user()->company;
+        $company->update([
+            'chat_primary_color' => $request->chat_primary_color,
+            'chat_secondary_color' => $request->chat_secondary_color,
+            'chat_theme_name' => $request->chat_theme_name
+        ]);
+
+        return back()->with('success', 'Chat theme updated successfully!');
+    }
+
     public function showVerifyEmail()
     {
         $companyId = session('company_id');

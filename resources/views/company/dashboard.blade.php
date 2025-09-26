@@ -89,14 +89,17 @@
         <div class="bg-white p-6 rounded-lg shadow">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
             <div class="space-y-3">
-                <a href="{{ route('admin.users.index') }}" class="block w-full text-left px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100">
-                    Manage Users
+                <a href="{{ route('admin.users.index') }}" class="block w-full text-left px-4 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors">
+                    <i class="fas fa-users mr-2"></i>Manage Users
                 </a>
-                <a href="{{ route('admin.departments.index') }}" class="block w-full text-left px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100">
-                    Manage Departments
+                <a href="{{ route('admin.departments.index') }}" class="block w-full text-left px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors">
+                    <i class="fas fa-building mr-2"></i>Manage Departments
                 </a>
-                <a href="{{ route('company.settings') }}" class="block w-full text-left px-4 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100">
-                    Company Settings
+                <a href="{{ route('admin.designations.index') }}" class="block w-full text-left px-4 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors">
+                    <i class="fas fa-briefcase mr-2"></i>Manage Designations
+                </a>
+                <a href="{{ route('company.settings') }}" class="block w-full text-left px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors">
+                    <i class="fas fa-cog mr-2"></i>Company Settings
                 </a>
             </div>
         </div>

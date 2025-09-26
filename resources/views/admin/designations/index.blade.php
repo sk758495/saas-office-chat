@@ -1,58 +1,89 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title">Designations</h3>
-                    <a href="{{ route('admin.designations.create') }}" class="btn btn-primary">Add Designation</a>
-                </div>
-                <div class="card-body">
-                    @if(session('success'))
-                        <div class="alert alert-success">{{ session('success') }}</div>
-                    @endif
-                    
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Name</th>
-                                    <th>Department</th>
-                                    <th>Status</th>
-                                    <th>Created At</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($designations as $designation)
-                                <tr>
-                                    <td>{{ $designation->id }}</td>
-                                    <td>{{ $designation->name }}</td>
-                                    <td>{{ $designation->department->name }}</td>
-                                    <td>
-                                        <span class="badge {{ $designation->status ? 'bg-success' : 'bg-danger' }}">
-                                            {{ $designation->status ? 'Active' : 'Inactive' }}
-                                        </span>
-                                    </td>
-                                    <td>{{ $designation->created_at->format('d M Y') }}</td>
-                                    <td>
-                                        <a href="{{ route('admin.designations.edit', $designation) }}" class="btn btn-sm btn-warning">Edit</a>
-                                        <form action="{{ route('admin.designations.destroy', $designation) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+<div class="max-w-7xl mx-auto px-6 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Designations</h1>
+            <p class="text-gray-600 mt-2">Manage job positions within departments</p>
+        </div>
+        <a href="{{ route('admin.designations.create') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+            <i class="fas fa-plus mr-2"></i>Add Designation
+        </a>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @forelse($designations as $designation)
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-briefcase text-indigo-600"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">{{ $designation->name }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-2">
+                                    <i class="fas fa-building text-green-600 text-xs"></i>
+                                </div>
+                                <span class="text-sm text-gray-900">{{ $designation->department->name }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ $designation->status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                {{ $designation->status ? 'Active' : 'Inactive' }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ $designation->created_at->format('M d, Y') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex items-center justify-end space-x-2">
+                                <a href="{{ route('admin.designations.edit', $designation) }}" class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-lg transition-colors">
+                                    <i class="fas fa-edit mr-1"></i>Edit
+                                </a>
+                                <form action="{{ route('admin.designations.destroy', $designation) }}" method="POST" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-lg transition-colors" onclick="return confirm('Are you sure you want to delete this designation?')">
+                                        <i class="fas fa-trash mr-1"></i>Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-briefcase text-4xl text-gray-300 mb-4"></i>
+                                <h3 class="text-lg font-medium text-gray-900 mb-2">No designations found</h3>
+                                <p class="text-gray-500 mb-4">Get started by creating your first designation.</p>
+                                <a href="{{ route('admin.designations.create') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                                    <i class="fas fa-plus mr-2"></i>Add Designation
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

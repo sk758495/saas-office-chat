@@ -26,7 +26,8 @@ class Group extends Model
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'group_members')
-                    ->withPivot('is_admin', 'joined_at');
+                    ->withPivot('role')
+                    ->withTimestamps();
     }
 
     public function messages(): HasMany
