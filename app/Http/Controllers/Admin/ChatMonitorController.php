@@ -12,9 +12,13 @@ class ChatMonitorController extends Controller
 {
     public function index()
     {
+        $companyId = auth('admin')->user()->company_id;
+        
         $individualChats = Chat::with(['user1', 'user2', 'messages' => function($q) {
             $q->latest()->limit(1);
-        }])->get()->map(function($chat) {
+        }])->whereHas('user1', function($q) use ($companyId) {
+            $q->where('company_id', $companyId);
+        })->get()->map(function($chat) {
             return [
                 'type' => 'individual',
                 'id' => $chat->id,
@@ -25,7 +29,7 @@ class ChatMonitorController extends Controller
             ];
         });
 
-        $groupChats = Group::with(['members', 'messages' => function($q) {
+        $groupChats = Group::where('company_id', $companyId)->with(['members', 'messages' => function($q) {
             $q->latest()->limit(1);
         }])->get()->map(function($group) {
             return [

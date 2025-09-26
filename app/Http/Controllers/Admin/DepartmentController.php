@@ -10,7 +10,8 @@ class DepartmentController extends Controller
 {
     public function index()
     {
-        $departments = Department::latest()->get();
+        $company = auth('admin')->user()->company;
+        $departments = $company->departments()->latest()->get();
         return view('admin.departments.index', compact('departments'));
     }
 
@@ -25,7 +26,7 @@ class DepartmentController extends Controller
             'name' => 'required|string|max:255|unique:departments',
         ]);
 
-        Department::create($request->all());
+        Department::create(array_merge($request->all(), ['company_id' => auth('admin')->user()->company_id]));
         return redirect()->route('admin.departments.index')->with('success', 'Department created successfully');
     }
 

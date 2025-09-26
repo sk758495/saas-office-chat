@@ -73,6 +73,11 @@ class AdminAuthController extends Controller
         ]);
 
         if (Auth::guard('admin')->attempt($request->only('email', 'password'), $request->filled('remember'))) {
+            $admin = Auth::guard('admin')->user();
+            if (!$admin->company->is_verified) {
+                Auth::guard('admin')->logout();
+                return back()->withErrors(['email' => 'Company email not verified. Please complete email verification first.']);
+            }
             return redirect()->route('company.dashboard');
         }
 

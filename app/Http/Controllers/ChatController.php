@@ -24,6 +24,7 @@ class ChatController extends Controller
         $currentUserId = Auth::id();
         
         $users = User::where('id', '!=', $currentUserId)
+                    ->where('company_id', auth()->user()->company_id)
                     ->with(['department', 'designation'])
                     ->get();
         
@@ -187,6 +188,7 @@ class ChatController extends Controller
         $currentUserId = Auth::id();
         
         $users = User::where('id', '!=', $currentUserId)
+                    ->where('company_id', auth()->user()->company_id)
                     ->with(['department', 'designation'])
                     ->get();
         
@@ -212,7 +214,9 @@ class ChatController extends Controller
         $currentUserId = Auth::id();
         $unreadCounts = [];
         
-        $users = User::where('id', '!=', $currentUserId)->get();
+        $users = User::where('id', '!=', $currentUserId)
+                    ->where('company_id', auth()->user()->company_id)
+                    ->get();
         
         foreach ($users as $user) {
             $chat = Chat::where(function($q) use ($currentUserId, $user) {

@@ -104,12 +104,5 @@ class User extends Authenticatable implements MustVerifyEmail
                     ->withPivot('is_admin', 'joined_at');
     }
 
-    protected static function booted()
-    {
-        static::addGlobalScope('company', function ($builder) {
-            if (auth()->check() && auth()->user()->company_id) {
-                $builder->where('company_id', auth()->user()->company_id);
-            }
-        });
-    }
+
 }

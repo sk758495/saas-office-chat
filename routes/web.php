@@ -16,13 +16,16 @@ Route::get('/', function () {
 // Company Registration Routes
 Route::get('/company/register', [\App\Http\Controllers\CompanyController::class, 'register'])->name('company.register');
 Route::post('/company/register', [\App\Http\Controllers\CompanyController::class, 'store'])->name('company.store');
+Route::get('/company/verify-email', [\App\Http\Controllers\CompanyController::class, 'showVerifyEmail'])->name('company.verify-email');
+Route::post('/company/verify-email', [\App\Http\Controllers\CompanyController::class, 'verifyEmail'])->name('company.verify-email.submit');
+Route::get('/company/resend-otp', [\App\Http\Controllers\CompanyController::class, 'resendOtp'])->name('company.resend-otp');
 
 Route::get('/dashboard', function () {
     return redirect()->route('chat.index');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 // Chat Routes
-Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureCompanyAccess::class])->group(function () {
+Route::middleware(['auth', 'verified', 'company.access'])->group(function () {
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
     Route::get('/chat/{user}', [ChatController::class, 'show']);
     Route::post('/chat/send', [ChatController::class, 'sendMessage']);
@@ -81,6 +84,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('/dashboard', function () {
         return redirect()->route('company.dashboard');
     })->name('dashboard');
+    Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->only(['index', 'create', 'store']);
     Route::resource('departments', DepartmentController::class);
     Route::resource('designations', DesignationController::class);
     Route::get('/chat-monitor', [\App\Http\Controllers\Admin\ChatMonitorController::class, 'index'])->name('chat-monitor');

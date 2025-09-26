@@ -11,13 +11,15 @@ class DesignationController extends Controller
 {
     public function index()
     {
-        $designations = Designation::with('department')->latest()->get();
+        $company = auth('admin')->user()->company;
+        $designations = $company->designations()->with('department')->latest()->get();
         return view('admin.designations.index', compact('designations'));
     }
 
     public function create()
     {
-        $departments = Department::where('status', true)->get();
+        $company = auth('admin')->user()->company;
+        $departments = $company->departments()->where('status', true)->get();
         return view('admin.designations.create', compact('departments'));
     }
 
@@ -28,7 +30,7 @@ class DesignationController extends Controller
             'department_id' => 'required|exists:departments,id',
         ]);
 
-        Designation::create($request->all());
+        Designation::create(array_merge($request->all(), ['company_id' => auth('admin')->user()->company_id]));
         return redirect()->route('admin.designations.index')->with('success', 'Designation created successfully');
     }
 

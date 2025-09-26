@@ -9,15 +9,21 @@ class Company extends Model
 {
     protected $fillable = [
         'name', 'email', 'phone', 'address', 'logo', 'plan', 
-        'is_active', 'max_users', 'max_storage_mb', 
-        'subscription_expires_at', 'subscription_amount'
+        'is_active', 'is_verified', 'max_users', 'max_storage_mb', 
+        'subscription_expires_at', 'subscription_amount',
+        'email_verified_at', 'email_verification_token', 'email_verification_expires_at'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_verified' => 'boolean',
         'subscription_expires_at' => 'datetime',
         'subscription_amount' => 'decimal:2',
+        'email_verified_at' => 'datetime',
+        'email_verification_expires_at' => 'datetime',
     ];
+
+    protected $hidden = ['email_verification_token'];
 
     public function users(): HasMany
     {

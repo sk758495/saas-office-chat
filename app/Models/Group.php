@@ -44,12 +44,5 @@ class Group extends Model
         return $this->belongsTo(Company::class);
     }
 
-    protected static function booted()
-    {
-        static::addGlobalScope('company', function ($builder) {
-            if (auth()->check() && auth()->user()->company_id) {
-                $builder->where('company_id', auth()->user()->company_id);
-            }
-        });
-    }
+
 }

@@ -35,15 +35,19 @@ class ExportController extends Controller
 
     private function exportUsers()
     {
-        $users = User::with(['department', 'designation'])->get();
+        $companyId = auth('admin')->user()->company_id;
+        $users = User::where('company_id', $companyId)->with(['department', 'designation'])->get();
         $pdf = Pdf::loadView('admin.exports.users', compact('users'));
         return $pdf->download('users-report-' . date('Y-m-d') . '.pdf');
     }
 
     private function exportChats()
     {
-        $chats = Chat::with(['user1', 'user2'])->get();
-        $groups = Group::with('members')->get();
+        $companyId = auth('admin')->user()->company_id;
+        $chats = Chat::with(['user1', 'user2'])->whereHas('user1', function($q) use ($companyId) {
+            $q->where('company_id', $companyId);
+        })->get();
+        $groups = Group::where('company_id', $companyId)->with('members')->get();
         $pdf = Pdf::loadView('admin.exports.chats', compact('chats', 'groups'));
         return $pdf->download('chats-report-' . date('Y-m-d') . '.pdf');
     }
@@ -71,8 +75,9 @@ class ExportController extends Controller
 
     private function exportDepartments()
     {
-        $departments = Department::withCount('users')->get();
-        $designations = Designation::with('department')->get();
+        $companyId = auth('admin')->user()->company_id;
+        $departments = Department::where('company_id', $companyId)->withCount('users')->get();
+        $designations = Designation::where('company_id', $companyId)->with('department')->get();
         $pdf = Pdf::loadView('admin.exports.departments', compact('departments', 'designations'));
         return $pdf->download('departments-report-' . date('Y-m-d') . '.pdf');
     }

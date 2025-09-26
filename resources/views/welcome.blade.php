@@ -440,14 +440,17 @@
                     @else
                         <a href="{{ route('login') }}" class="btn btn-primary">
                             <i class="fas fa-sign-in-alt"></i>
-                            Get Started
+                            Employee Login
                         </a>
-                        @if (Route::has('register'))
-                            <a href="{{ route('register') }}" class="btn btn-secondary">
-                                <i class="fas fa-user-plus"></i>
-                                Create Account
-                            </a>
-                        @endif
+
+                        <a href="{{ route('company.register') }}" class="btn btn-secondary">
+                            <i class="fas fa-building"></i>
+                            Register Company
+                        </a>
+                        <a href="{{ route('admin.login') }}" class="btn btn-secondary">
+                            <i class="fas fa-user-shield"></i>
+                            Admin Login
+                        </a>
                     @endauth
                 </div>
             @endif
