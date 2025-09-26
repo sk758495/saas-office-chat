@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>WebSocket Connection Test</h1>
+    <div id="status">Disconnected</div>
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Type a message...">
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        const ws = new WebSocket('ws://127.0.0.1:6001/ws');
+        const status = document.getElementById('status');
+        const messages = document.getElementById('messages');
+
+        ws.onopen = function() {
+            status.textContent = 'Connected';
+            status.style.color = 'green';
+        };
+
+        ws.onmessage = function(event) {
+            const message = document.createElement('div');
+            message.textContent = 'Received: ' + event.data;
+            messages.appendChild(message);
+        };
+
+        ws.onclose = function() {
+            status.textContent = 'Disconnected';
+            status.style.color = 'red';
+        };
+
+        ws.onerror = function(error) {
+            status.textContent = 'Error: ' + error;
+            status.style.color = 'red';
+        };
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            if (input.value && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'message',
+                    content: input.value,
+                    timestamp: new Date().toISOString()
+                }));
+                input.value = '';
+            }
+        }
+
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

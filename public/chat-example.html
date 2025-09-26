@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with Image Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/image-viewer.css">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h1 class="text-2xl font-bold mb-4">Chat Messages</h1>
+            
+            <!-- Messages Container -->
+            <div id="messagesContainer" class="space-y-4 mb-4 max-h-96 overflow-y-auto">
+                <!-- Messages will be loaded here -->
+            </div>
+            
+            <!-- Send Message Form -->
+            <div class="border-t pt-4">
+                <div class="flex gap-2">
+                    <input type="text" id="messageInput" placeholder="Type a message..." 
+                           class="flex-1 border rounded px-3 py-2">
+                    <input type="file" id="fileInput" accept="image/*,*" class="hidden">
+                    <button onclick="document.getElementById('fileInput').click()" 
+                            class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                        📎
+                    </button>
+                    <button onclick="sendMessage()" 
+                            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/image-viewer.js"></script>
+    <script>
+        // Example usage
+        const token = localStorage.getItem('auth_token');
+        const currentUserId = 1; // Get from your auth system
+        
+        // Load messages for a specific chat
+        async function loadMessages(userId) {
+            try {
+                const response = await fetch(`/api/chat/${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    displayMessages(data.messages);
+                }
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+        
+        function displayMessages(messages) {
+            const container = document.getElementById('messagesContainer');
+            container.innerHTML = '';
+            
+            messages.forEach(message => {
+                const messageElement = renderMessage(message);
+                container.appendChild(messageElement);
+            });
+            
+            // Scroll to bottom
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const fileInput = document.getElementById('fileInput');
+            const receiverId = 2; // Set the receiver ID
+            
+            const formData = new FormData();
+            formData.append('receiver_id', receiverId);
+            
+            if (messageInput.value.trim()) {
+                formData.append('message', messageInput.value);
+            }
+            
+            if (fileInput.files[0]) {
+                formData.append('file', fileInput.files[0]);
+            }
+            
+            try {
+                const response = await fetch('/api/chat/send', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    messageInput.value = '';
+                    fileInput.value = '';
+                    // Reload messages or append new message
+                    loadMessages(receiverId);
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+            }
+        }
+        
+        // Load messages on page load
+        // loadMessages(2); // Uncomment and set user ID
+    </script>
+</body>
+</html>

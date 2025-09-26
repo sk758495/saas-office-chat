@@ -1,0 +1,147 @@
+/* File Upload Styles */
+.upload-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.upload-btn {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #f8f9fa;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.upload-btn:hover {
+    background: #e9ecef;
+}
+
+.upload-btn input[type="file"] {
+    display: none;
+}
+
+#upload-preview {
+    display: none;
+    margin-bottom: 10px;
+}
+
+.upload-preview-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #f8f9fa;
+    margin-bottom: 5px;
+}
+
+.preview-icon {
+    font-size: 24px;
+    margin-right: 10px;
+}
+
+.preview-image {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-right: 10px;
+}
+
+.preview-info {
+    flex: 1;
+}
+
+.preview-name {
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.preview-details {
+    font-size: 12px;
+    color: #666;
+}
+
+.remove-preview {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #999;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.remove-preview:hover {
+    color: #dc3545;
+}
+
+/* Message display styles for files/folders */
+.message-attachment {
+    margin-top: 8px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #f8f9fa;
+}
+
+.attachment-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.attachment-icon {
+    font-size: 20px;
+    margin-right: 8px;
+}
+
+.attachment-info h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.attachment-info p {
+    margin: 2px 0 0 0;
+    font-size: 12px;
+    color: #666;
+}
+
+.folder-contents {
+    max-height: 150px;
+    overflow-y: auto;
+    border-top: 1px solid #ddd;
+    padding-top: 8px;
+}
+
+.folder-file {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    font-size: 12px;
+}
+
+.download-btn {
+    display: inline-block;
+    padding: 4px 8px;
+    background: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 3px;
+    font-size: 12px;
+    margin-top: 8px;
+}
+
+.download-btn:hover {
+    background: #0056b3;
+    color: white;
+    text-decoration: none;
+}

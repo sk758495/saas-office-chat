@@ -1,0 +1,46 @@
+/* Image Viewer Styles */
+#imageModal {
+    backdrop-filter: blur(5px);
+}
+
+#imageModal img {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+}
+
+.image-message img {
+    transition: opacity 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.image-message img:hover {
+    border-color: #3b82f6;
+}
+
+.file-message {
+    max-width: 300px;
+}
+
+.file-icon {
+    font-size: 1.2em;
+}
+
+.message {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    #imageModal .relative {
+        margin: 1rem;
+    }
+    
+    .image-message img {
+        max-width: 200px;
+    }
+}

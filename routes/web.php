@@ -1,0 +1,97 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\OtpVerificationController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\GroupController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Admin\DepartmentController;
+use App\Http\Controllers\Admin\DesignationController;
+use App\Http\Controllers\CompanyController;
+
+Route::get('/', function () {
+    return view('welcome');
+});
+
+// Company Registration Routes
+Route::get('/company/register', [\App\Http\Controllers\CompanyController::class, 'register'])->name('company.register');
+Route::post('/company/register', [\App\Http\Controllers\CompanyController::class, 'store'])->name('company.store');
+
+Route::get('/dashboard', function () {
+    return redirect()->route('chat.index');
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+// Chat Routes
+Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureCompanyAccess::class])->group(function () {
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/{user}', [ChatController::class, 'show']);
+    Route::post('/chat/send', [ChatController::class, 'sendMessage']);
+    Route::get('/api/users', [ChatController::class, 'getUsers']);
+    Route::get('/api/unread-counts', [ChatController::class, 'getUnreadCounts']);
+    
+    // Profile Routes
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::post('/profile/photo', [ProfileController::class, 'updatePhoto']);
+    Route::post('/profile/pin', [ProfileController::class, 'updatePin']);
+    Route::post('/profile/toggle-lock', [ProfileController::class, 'toggleLock']);
+    Route::post('/profile/verify-pin', [ProfileController::class, 'verifyPin']);
+    Route::post('/profile/forgot-pin', [ProfileController::class, 'forgotPin']);
+    Route::post('/profile/verify-otp', [ProfileController::class, 'verifyOtp']);
+    Route::post('/profile/reset-pin-after-otp', [ProfileController::class, 'resetPinAfterOtp']);
+    Route::post('/profile/remove-pin', [ProfileController::class, 'removePin']);
+    Route::post('/profile/send-current-email-verification', [ProfileController::class, 'sendCurrentEmailVerification']);
+    Route::post('/profile/verify-current-email', [ProfileController::class, 'verifyCurrentEmail']);
+    Route::post('/profile/email', [ProfileController::class, 'updateEmail']);
+    Route::post('/profile/verify-new-email', [ProfileController::class, 'verifyNewEmail']);
+    Route::post('/profile/password', [ProfileController::class, 'updatePassword']);
+    
+    // Group Routes
+    Route::post('/groups', [GroupController::class, 'create']);
+    Route::get('/groups/{id}', [GroupController::class, 'show']);
+    Route::post('/groups/send-message', [GroupController::class, 'sendMessage']);
+    Route::post('/groups/{id}/add-member', [GroupController::class, 'addMember']);
+    Route::post('/groups/{id}/remove-member', [GroupController::class, 'removeMember']);
+    Route::post('/groups/{id}/make-admin', [GroupController::class, 'makeAdmin']);
+    Route::post('/groups/{id}/photo', [GroupController::class, 'updateGroupPhoto']);
+    Route::post('/groups/{id}/exit', [GroupController::class, 'exitGroup']);
+    
+    // File Routes
+    Route::get('/files/view/{id}', [ChatController::class, 'viewFile']);
+    Route::get('/files/download/{id}', [ChatController::class, 'downloadFile']);
+    
+    // API Routes
+    Route::get('/api/unread-counts', [ChatController::class, 'getUnreadCounts']);
+    Route::get('/api/group-unread-counts', [ChatController::class, 'getGroupUnreadCounts']);
+    Route::get('/api/users', [ChatController::class, 'getUsers']);
+});
+
+// API Routes for AJAX
+Route::get('/api/designations/{department}', [DesignationController::class, 'getByDepartment']);
+
+// Company Admin Routes
+Route::middleware(['auth:admin'])->prefix('company')->name('company.')->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\CompanyController::class, 'dashboard'])->name('dashboard');
+    Route::get('/settings', [\App\Http\Controllers\CompanyController::class, 'settings'])->name('settings');
+    Route::post('/settings', [\App\Http\Controllers\CompanyController::class, 'updateSettings'])->name('settings.update');
+    Route::post('/upgrade', [\App\Http\Controllers\CompanyController::class, 'upgrade'])->name('upgrade');
+});
+
+// Admin Routes
+Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', function () {
+        return redirect()->route('company.dashboard');
+    })->name('dashboard');
+    Route::resource('departments', DepartmentController::class);
+    Route::resource('designations', DesignationController::class);
+    Route::get('/chat-monitor', [\App\Http\Controllers\Admin\ChatMonitorController::class, 'index'])->name('chat-monitor');
+    Route::get('/chat-monitor/{type}/{id}', [\App\Http\Controllers\Admin\ChatMonitorController::class, 'show'])->name('chat-monitor.show');
+    Route::get('/export/{type}', [\App\Http\Controllers\Admin\ExportController::class, 'exportData'])->name('export');
+});
+
+require __DIR__.'/auth.php';
+require __DIR__.'/Admin/auth.php';
+
+Route::get('auth/otp/verify', [OtpVerificationController::class, 'show'])->name('auth.otp.verify');
+Route::post('auth/otp/verify', [OtpVerificationController::class, 'verify']);
+Route::post('auth/otp/resend', [OtpVerificationController::class, 'resend'])->name('auth.otp.resend');
+
