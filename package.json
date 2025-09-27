@@ -4,7 +4,8 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "websocket": "node websocket-server.js"
+        "websocket": "node websocket-server.js",
+        "install-deps": "npm install"
     },
     "devDependencies": {
         "@tailwindcss/forms": "^0.5.2",
@@ -18,5 +19,9 @@
         "tailwindcss": "^3.1.0",
         "vite": "^6.0.11",
         "ws": "^8.14.2"
+    },
+    "dependencies": {
+        "simple-peer": "^9.11.1",
+        "socket.io-client": "^4.7.2"
     }
 }

@@ -1,0 +1,62 @@
+/* Video Call Interface Styles */
+#video-call-interface {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.video-container {
+    position: relative;
+    background: #1a1a1a;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.video-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #000;
+}
+
+.video-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+    padding: 16px;
+    color: white;
+}
+
+.participant-name {
+    font-size: 14px;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.call-controls {
+    background: rgba(31, 41, 55, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(75, 85, 99, 0.3);
+}
+
+.control-button {
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.control-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.control-button:active {
+    transform: translateY(0);
+}
+
+.control-button.recording {
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {\n    0%, 100% {\n        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);\n    }\n    50% {\n        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);\n    }\n}\n\n.recording-indicator {\n    animation: recording-blink 1s infinite;\n}\n\n@keyframes recording-blink {\n    0%, 50% { opacity: 1; }\n    51%, 100% { opacity: 0.3; }\n}\n\n.remote-video-grid {\n    display: grid;\n    gap: 8px;\n    padding: 16px;\n    height: 100%;\n}\n\n.remote-video-grid.single {\n    grid-template-columns: 1fr;\n}\n\n.remote-video-grid.dual {\n    grid-template-columns: 1fr 1fr;\n}\n\n.remote-video-grid.triple {\n    grid-template-columns: 1fr 1fr;\n    grid-template-rows: 1fr 1fr;\n}\n\n.remote-video-grid.quad {\n    grid-template-columns: 1fr 1fr;\n    grid-template-rows: 1fr 1fr;\n}\n\n.remote-video-grid.many {\n    grid-template-columns: repeat(3, 1fr);\n    grid-auto-rows: 1fr;\n}\n\n.local-video-container {\n    border: 2px solid rgba(59, 130, 246, 0.5);\n    transition: border-color 0.3s ease;\n}\n\n.local-video-container:hover {\n    border-color: rgba(59, 130, 246, 0.8);\n}\n\n.call-duration {\n    position: absolute;\n    top: 16px;\n    left: 50%;\n    transform: translateX(-50%);\n    background: rgba(0, 0, 0, 0.7);\n    color: white;\n    padding: 8px 16px;\n    border-radius: 20px;\n    font-size: 14px;\n    font-weight: 500;\n}\n\n.participant-status {\n    position: absolute;\n    top: 8px;\n    right: 8px;\n    background: rgba(0, 0, 0, 0.7);\n    color: white;\n    padding: 4px 8px;\n    border-radius: 12px;\n    font-size: 12px;\n}\n\n.muted-indicator {\n    position: absolute;\n    top: 8px;\n    left: 8px;\n    background: rgba(239, 68, 68, 0.9);\n    color: white;\n    padding: 4px 8px;\n    border-radius: 12px;\n    font-size: 12px;\n    display: flex;\n    align-items: center;\n    gap: 4px;\n}\n\n.connection-status {\n    position: absolute;\n    top: 16px;\n    right: 16px;\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    background: rgba(0, 0, 0, 0.7);\n    color: white;\n    padding: 8px 12px;\n    border-radius: 16px;\n    font-size: 12px;\n}\n\n.connection-indicator {\n    width: 8px;\n    height: 8px;\n    border-radius: 50%;\n    background: #10b981;\n}\n\n.connection-indicator.poor {\n    background: #f59e0b;\n}\n\n.connection-indicator.disconnected {\n    background: #ef4444;\n}\n\n/* Responsive Design */\n@media (max-width: 768px) {\n    .remote-video-grid {\n        padding: 8px;\n        gap: 4px;\n    }\n    \n    .local-video-container {\n        width: 120px !important;\n        height: 90px !important;\n        bottom: 80px !important;\n    }\n    \n    .call-controls {\n        padding: 12px;\n    }\n    \n    .control-button {\n        padding: 12px !important;\n    }\n}\n\n/* Dark mode support */\n@media (prefers-color-scheme: dark) {\n    .call-controls {\n        background: rgba(17, 24, 39, 0.95);\n        border-top-color: rgba(55, 65, 81, 0.3);\n    }\n}\n\n/* Accessibility */\n.control-button:focus {\n    outline: 2px solid #3b82f6;\n    outline-offset: 2px;\n}\n\n.sr-only {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n}
