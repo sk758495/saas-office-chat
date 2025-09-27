@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class ProfileController extends Controller
@@ -34,16 +35,22 @@ class ProfileController extends Controller
 
     public function updatePin(Request $request)
     {
-        $request->validate([
+        $data = $request->json()->all();
+        
+        $validator = Validator::make($data, [
             'pin' => 'required|digits:4',
             'confirm_pin' => 'required|same:pin'
         ]);
+        
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()->first()], 400);
+        }
 
         $user = Auth::user();
         $isNewPin = !$user->chat_pin;
         
         $user->update([
-            'chat_pin' => $request->pin,
+            'chat_pin' => $data['pin'],
             'chat_lock_enabled' => true
         ]);
 
@@ -68,11 +75,19 @@ class ProfileController extends Controller
 
     public function verifyPin(Request $request)
     {
-        $request->validate(['pin' => 'required|digits:4']);
+        $data = $request->json()->all();
+        
+        $validator = Validator::make($data, [
+            'pin' => 'required|digits:4'
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()->first()], 400);
+        }
         
         $user = Auth::user();
         
-        if ($request->pin === $user->chat_pin) {
+        if ($data['pin'] === $user->chat_pin) {
             session(['chat_unlocked' => true]);
             return response()->json(['success' => true]);
         }
@@ -207,11 +222,19 @@ class ProfileController extends Controller
 
     public function verifyCurrentEmail(Request $request)
     {
-        $request->validate(['otp' => 'required|digits:6']);
+        $data = $request->json()->all();
+        
+        $validator = Validator::make($data, [
+            'otp' => 'required|digits:6'
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()->first()], 400);
+        }
         
         $user = Auth::user();
         
-        if ($user->email_verification_token !== $request->otp || $user->email_verification_expires_at < now()) {
+        if ($user->email_verification_token !== $data['otp'] || $user->email_verification_expires_at < now()) {
             return response()->json(['error' => 'Invalid or expired OTP'], 400);
         }
         
@@ -225,21 +248,27 @@ class ProfileController extends Controller
             return response()->json(['error' => 'Please verify your current email first'], 400);
         }
         
-        $request->validate([
+        $data = $request->json()->all();
+        
+        $validator = Validator::make($data, [
             'email' => 'required|email|unique:users,email,' . Auth::id()
         ]);
+        
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()->first()], 400);
+        }
 
         $user = Auth::user();
         $otp = str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT);
         
         session([
-            'new_email' => $request->email,
+            'new_email' => $data['email'],
             'new_email_otp' => $otp,
             'new_email_expires_at' => now()->addMinutes(10)
         ]);
         
-        Mail::raw("Your new email verification OTP: {$otp}\nThis OTP will expire in 10 minutes.", function($message) use ($request) {
-            $message->to($request->email)->subject('New Email Verification - Office Chat');
+        Mail::raw("Your new email verification OTP: {$otp}\nThis OTP will expire in 10 minutes.", function($message) use ($data) {
+            $message->to($data['email'])->subject('New Email Verification - Office Chat');
         });
         
         return response()->json(['success' => true, 'message' => 'Verification OTP sent to your new email']);
@@ -247,9 +276,17 @@ class ProfileController extends Controller
 
     public function verifyNewEmail(Request $request)
     {
-        $request->validate(['otp' => 'required|digits:6']);
+        $data = $request->json()->all();
         
-        if (!session('new_email') || session('new_email_otp') !== $request->otp || session('new_email_expires_at') < now()) {
+        $validator = Validator::make($data, [
+            'otp' => 'required|digits:6'
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()->first()], 400);
+        }
+        
+        if (!session('new_email') || session('new_email_otp') !== $data['otp'] || session('new_email_expires_at') < now()) {
             return response()->json(['error' => 'Invalid or expired OTP'], 400);
         }
         
@@ -265,18 +302,25 @@ class ProfileController extends Controller
             return response()->json(['error' => 'Please verify your email first'], 400);
         }
         
-        $request->validate([
+        $data = $request->json()->all();
+        
+        $validator = Validator::make($data, [
             'current_password' => 'required',
-            'password' => 'required|min:8|confirmed'
+            'password' => 'required|min:8',
+            'password_confirmation' => 'required|same:password'
         ]);
+        
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()->first()], 400);
+        }
 
         $user = Auth::user();
         
-        if (!Hash::check($request->current_password, $user->password)) {
+        if (!Hash::check($data['current_password'], $user->password)) {
             return response()->json(['error' => 'Current password is incorrect'], 400);
         }
 
-        $user->update(['password' => Hash::make($request->password)]);
+        $user->update(['password' => Hash::make($data['password'])]);
         session()->forget(['current_email_verified', 'verified_user_id']);
         return response()->json(['success' => true, 'message' => 'Password updated successfully!']);
     }
