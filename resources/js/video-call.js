@@ -38,12 +38,17 @@ class VideoCallManager {
             this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
             
             // Create call via API
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            
             const response = await fetch('/api/calls/initiate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
                 },
+                credentials: 'same-origin',
                 body: JSON.stringify({
                     type: type,
                     call_type: callType,
@@ -83,11 +88,16 @@ class VideoCallManager {
             this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
             
             // Join call via API
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
             const response = await fetch(`/api/calls/${this.currentCall.id}/join`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin'
             });
 
             if (response.ok) {
@@ -110,11 +120,16 @@ class VideoCallManager {
     async leaveCall() {
         try {
             if (this.currentCall) {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                
                 await fetch(`/api/calls/${this.currentCall.id}/leave`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin'
                 });
             }
 
@@ -155,11 +170,16 @@ class VideoCallManager {
             };
 
             // Start recording via API
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            
             const response = await fetch(`/api/calls/${this.currentCall.id}/start-recording`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin'
             });
 
             if (response.ok) {
@@ -187,21 +207,30 @@ class VideoCallManager {
             formData.append('recording', blob, `call_${this.currentCall.call_id}.webm`);
 
             // Get the recording ID from the current call's recordings
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            
             const recordingsResponse = await fetch(`/api/calls/${this.currentCall.id}/recordings`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin'
             });
             
             const recordings = await recordingsResponse.json();
             const latestRecording = recordings[recordings.length - 1];
 
             if (latestRecording) {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                
                 await fetch(`/api/recordings/${latestRecording.id}/upload`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
+                    credentials: 'same-origin',
                     body: formData
                 });
             }

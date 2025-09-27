@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Call API</title>
+    <meta name="csrf-token" content="test-token">
+</head>
+<body>
+    <h1>Test Call API</h1>
+    <button onclick="testCallAPI()">Test Call Initiation</button>
+    <div id="result"></div>
+
+    <script>
+        async function testCallAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch('/api/test-session-auth', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                });
+                
+                const data = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                
+                if (data.success) {
+                    // Now test call initiation
+                    const callResponse = await fetch('/api/calls/initiate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            type: 'one_to_one',
+                            call_type: 'video',
+                            chat_id: 1,
+                            group_id: null
+                        })
+                    });
+                    
+                    const callData = await callResponse.json();
+                    resultDiv.innerHTML += `<br><br>Call API Response:<br><pre>${JSON.stringify(callData, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

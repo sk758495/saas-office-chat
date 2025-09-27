@@ -76,8 +76,10 @@ class VideoCallManager {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
                     'Accept': 'application/json'
                 },
+                credentials: 'same-origin',
                 body: JSON.stringify({
                     type: type,
                     call_type: callType,
@@ -144,8 +146,10 @@ class VideoCallManager {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
                     'Accept': 'application/json'
-                }
+                },
+                credentials: 'same-origin'
             });
 
             if (response.ok) {
@@ -174,8 +178,10 @@ class VideoCallManager {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'application/json'
-                    }
+                    },
+                    credentials: 'same-origin'
                 });
             }
 
@@ -222,8 +228,10 @@ class VideoCallManager {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
                     'Accept': 'application/json'
-                }
+                },
+                credentials: 'same-origin'
             });
 
             if (response.ok) {

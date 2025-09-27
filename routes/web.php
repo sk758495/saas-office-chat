@@ -67,6 +67,25 @@ Route::middleware(['auth', 'verified', 'company.access'])->group(function () {
     Route::get('/api/group-unread-counts', [ChatController::class, 'getGroupUnreadCounts']);
     Route::get('/api/users', [ChatController::class, 'getUsers']);
     
+    // Debug route for call testing
+    Route::get('/api/debug-call', function() {
+        $user = auth()->user();
+        $chats = \App\Models\Chat::where('user1_id', $user->id)
+            ->orWhere('user2_id', $user->id)
+            ->get();
+        $groups = \App\Models\Group::whereHas('members', function($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })->get();
+        
+        return response()->json([
+            'success' => true,
+            'user' => $user,
+            'chats' => $chats,
+            'groups' => $groups,
+            'message' => 'Debug info for call testing'
+        ]);
+    });
+    
     // Call Routes
     Route::post('/api/calls/initiate', [\App\Http\Controllers\CallController::class, 'initiateCall']);
     Route::post('/api/calls/{call}/join', [\App\Http\Controllers\CallController::class, 'joinCall']);

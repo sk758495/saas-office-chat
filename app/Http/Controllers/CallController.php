@@ -15,35 +15,130 @@ class CallController extends Controller
 {
     public function initiateCall(Request $request)
     {
-        $request->validate([
-            'type' => 'required|in:one_to_one,group',
-            'call_type' => 'required|in:audio,video',
-            'chat_id' => 'required_if:type,one_to_one|exists:chats,id',
-            'group_id' => 'required_if:type,group|exists:groups,id',
-        ]);
-
-        $call = Call::create([
-            'call_id' => Str::uuid(),
-            'type' => $request->type,
-            'call_type' => $request->call_type,
-            'status' => 'initiated',
-            'caller_id' => auth()->id(),
-            'chat_id' => $request->chat_id,
-            'group_id' => $request->group_id,
-            'started_at' => now(),
-        ]);
-
-        // Add participants
+        // Debug logging
+        \Log::info('Call initiate request data:', $request->all());
+        \Log::info('Current user:', ['id' => auth()->id(), 'name' => auth()->user()?->name]);
+        
+        // Simplified validation for debugging
+        if (!$request->has('type') || !$request->has('call_type')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Missing required fields: type and call_type',
+                'received_data' => $request->all()
+            ], 422);
+        }
+        
+        if (!in_array($request->type, ['one_to_one', 'group'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid type. Must be one_to_one or group',
+                'received_type' => $request->type
+            ], 422);
+        }
+        
+        if (!in_array($request->call_type, ['audio', 'video'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid call_type. Must be audio or video',
+                'received_call_type' => $request->call_type
+            ], 422);
+        }
+        
+        if ($request->type === 'one_to_one' && !$request->chat_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'chat_id is required for one_to_one calls',
+                'received_chat_id' => $request->chat_id
+            ], 422);
+        }
+        
+        if ($request->type === 'group' && !$request->group_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'group_id is required for group calls',
+                'received_group_id' => $request->group_id
+            ], 422);
+        }
+        
+        // Additional validation for user access
         if ($request->type === 'one_to_one') {
             $chat = Chat::find($request->chat_id);
-            $otherUser = $chat->getOtherUser(auth()->id());
-            $call->participants()->attach($otherUser->id, ['status' => 'invited']);
+            if (!$chat || ($chat->user1_id !== auth()->id() && $chat->user2_id !== auth()->id())) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have access to this chat'
+                ], 403);
+            }
         } else {
             $group = Group::find($request->group_id);
-            $memberIds = $group->members()->where('user_id', '!=', auth()->id())->pluck('user_id');
-            foreach ($memberIds as $memberId) {
-                $call->participants()->attach($memberId, ['status' => 'invited']);
+            if (!$group || !$group->members()->where('user_id', auth()->id())->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not a member of this group'
+                ], 403);
             }
+        }
+
+        try {
+            $call = Call::create([
+                'call_id' => Str::uuid(),
+                'type' => $request->type,
+                'call_type' => $request->call_type,
+                'status' => 'initiated',
+                'caller_id' => auth()->id(),
+                'chat_id' => $request->chat_id,
+                'group_id' => $request->group_id,
+                'started_at' => now(),
+            ]);
+            
+            \Log::info('Call created successfully:', ['call_id' => $call->id]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to create call:', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create call: ' . $e->getMessage()
+            ], 500);
+        }
+
+        // Add participants
+        try {
+            if ($request->type === 'one_to_one') {
+                $chat = Chat::find($request->chat_id);
+                if (!$chat) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Chat not found'
+                    ], 404);
+                }
+                $otherUser = $chat->getOtherUser(auth()->id());
+                if (!$otherUser) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Other user not found in chat'
+                    ], 404);
+                }
+                $call->participants()->attach($otherUser->id, ['status' => 'invited']);
+                \Log::info('Added participant to one-to-one call:', ['user_id' => $otherUser->id]);
+            } else {
+                $group = Group::find($request->group_id);
+                if (!$group) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Group not found'
+                    ], 404);
+                }
+                $memberIds = $group->members()->where('user_id', '!=', auth()->id())->pluck('user_id');
+                foreach ($memberIds as $memberId) {
+                    $call->participants()->attach($memberId, ['status' => 'invited']);
+                }
+                \Log::info('Added participants to group call:', ['member_count' => $memberIds->count()]);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to add participants:', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to add participants: ' . $e->getMessage()
+            ], 500);
         }
 
         return response()->json([

@@ -2469,25 +2469,21 @@
         
         // Start call function
         async function startCall(callType) {
-            if (!videoCallManager) {
-                initializeVideoCallManager();
-            }
+            console.log('Starting call:', { callType, currentChatUserId, currentGroupId, currentChat });
             
-            if (!videoCallManager) {
+            if (!window.videoCallManager) {
+                console.error('Video call manager not available');
                 alert('Video calling is not available. Please refresh the page.');
                 return;
             }
             
             try {
                 if (currentGroupId) {
-                    await videoCallManager.initiateCall('group', currentGroupId, callType);
-                } else if (currentChatUserId) {
-                    const chatId = currentChat ? currentChat.id : null;
-                    if (chatId) {
-                        await videoCallManager.initiateCall('one_to_one', chatId, callType);
-                    } else {
-                        throw new Error('Unable to start call. Please try again.');
-                    }
+                    console.log('Starting group call for group:', currentGroupId);
+                    await window.videoCallManager.initiateCall('group', currentGroupId, callType);
+                } else if (currentChatUserId && currentChat) {
+                    console.log('Starting one-to-one call for chat:', currentChat.id);
+                    await window.videoCallManager.initiateCall('one_to_one', currentChat.id, callType);
                 } else {
                     throw new Error('Please select a user or group to call.');
                 }

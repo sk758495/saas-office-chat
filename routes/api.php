@@ -68,7 +68,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/email', [ProfileController::class, 'updateEmail']);
     Route::post('/profile/verify-new-email', [ProfileController::class, 'verifyNewEmail']);
     Route::post('/profile/password', [ProfileController::class, 'updatePassword']);
-    
 
 });
 
@@ -126,6 +125,8 @@ Route::options('/ws/broadcast', function() {
         ->header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 });
+
+
 
 // Test route to debug authentication
 Route::middleware('auth:sanctum')->get('/test-auth', function (Request $request) {
