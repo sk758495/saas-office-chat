@@ -37,7 +37,7 @@
                 <div class="mx-auto h-20 w-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-lg">
                     <i class="fas fa-building text-3xl text-indigo-600"></i>
                 </div>
-                <h2 class="text-4xl font-bold text-white mb-2">Join dcdcdOffice Chat</h2>
+                <h2 class="text-4xl font-bold text-white mb-2">Join Office Chat</h2>
                 <p class="text-indigo-100 text-lg">Transform your team communication today</p>
             </div>
 
