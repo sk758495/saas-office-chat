@@ -4,7 +4,10 @@ import express from 'express';
 import cors from 'cors';
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: ['https://emplora.jashmainfosoft.com', 'http://localhost', 'http://127.0.0.1'],
+    credentials: true
+}));
 app.use(express.json());
 
 const server = http.createServer(app);
@@ -14,27 +17,50 @@ const wss = new WebSocketServer({
 });
 
 const clients = new Map();
-const activeCalls = new Map(); // Store active call sessions
+const activeCalls = new Map();
 
-// HTTP endpoint for broadcasting
+// HTTP endpoint for broadcasting call invitations
 app.post('/broadcast', (req, res) => {
-    const { type, data, user_id, chat_id, group_id, timestamp } = req.body;
+    console.log('Broadcast request received:', req.body);
     
-    const message = {
-        type,
-        data,
-        user_id,
-        chat_id,
-        group_id,
-        timestamp
-    };
+    const message = req.body;
     
-    // Broadcast to all connected WebSocket clients
-    wss.clients.forEach((client) => {
-        if (client.readyState === 1) { // 1 = OPEN
-            client.send(JSON.stringify(message));
+    if (message.type === 'call-invitation') {
+        // Handle call invitation specifically
+        const { participants, callId, caller, callerName, callType } = message;
+        
+        console.log(`Broadcasting call invitation: ${callId}, participants:`, participants?.length || 0);
+        
+        if (participants && participants.length > 0) {
+            participants.forEach(participant => {
+                const participantId = participant.id || participant.user_id;
+                const participantWs = clients.get(participantId);
+                
+                console.log(`Sending invitation to user ${participantId}, connected:`, !!participantWs);
+                
+                if (participantWs && participantWs.readyState === 1) {
+                    participantWs.send(JSON.stringify({
+                        type: 'call-invitation',
+                        callId,
+                        caller,
+                        callerName,
+                        callType,
+                        timestamp: Date.now()
+                    }));
+                    console.log(`Call invitation sent to user ${participantId}`);
+                } else {
+                    console.log(`User ${participantId} not connected or WebSocket not ready`);
+                }
+            });
         }
-    });
+    } else {
+        // Broadcast to all connected clients for other message types
+        wss.clients.forEach((client) => {
+            if (client.readyState === 1) {
+                client.send(JSON.stringify(message));
+            }
+        });
+    }
     
     res.json({ success: true, message: 'Broadcasted successfully' });
 });
@@ -178,8 +204,13 @@ function handleWebRTCSignal(data, senderWs) {
     }
 }
 
-server.listen(6001, '0.0.0.0', () => {
-    console.log('WebSocket server running on ws://emplora.jashmainfosoft.com:6001/ws');
-    console.log('HTTP broadcast endpoint: http://emplora.jashmainfosoft.com:6001/broadcast');
+const PORT = process.env.PORT || 6001;
+const HOST = process.env.HOST || '0.0.0.0';
+
+server.listen(PORT, HOST, () => {
+    console.log(`WebSocket server running on ${HOST}:${PORT}`);
+    console.log(`WebSocket endpoint: ws://emplora.jashmainfosoft.com:${PORT}/ws`);
+    console.log(`HTTP broadcast endpoint: http://emplora.jashmainfosoft.com:${PORT}/broadcast`);
     console.log('Video calling signaling enabled');
+    console.log('Connected clients:', clients.size);
 });

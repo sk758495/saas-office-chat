@@ -35,75 +35,103 @@ class VideoCallManager {
     }
 
     initializeSocket() {
-        // Try WebSocket connection for all environments
         console.log('Initializing WebSocket connection...');
         
-        // Initialize WebSocket connection for signaling
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsHost = window.location.hostname;
-        
-        // For production HTTPS sites, use secure WebSocket without port
         let wsUrl;
-        if (window.location.protocol === 'https:' && wsHost !== 'localhost') {
-            // Try secure WebSocket on standard port first
-            wsUrl = `wss://${wsHost}/ws`;
+        
+        // Production configuration for your domain
+        if (wsHost === 'emplora.jashmainfosoft.com') {
+            wsUrl = `ws://${wsHost}:6001/ws`; // Use HTTP WebSocket for now
+        } else if (wsHost === 'localhost' || wsHost === '127.0.0.1') {
+            wsUrl = `ws://${wsHost}:6001/ws`;
         } else {
-            // Local development
+            // Fallback
             wsUrl = `ws://${wsHost}:6001/ws`;
         }
         
         console.log('Connecting to WebSocket:', wsUrl);
-        this.socket = new WebSocket(wsUrl);
-        
-        this.socket.onopen = () => {
-            console.log('WebSocket connected for video calls');
-            // Authenticate the WebSocket connection
-            this.sendSignalingMessage({
-                type: 'auth',
-                user_id: this.getCurrentUserId()
-            });
-        };
+        this.connectWebSocket(wsUrl);
+    }
+    
+    connectWebSocket(wsUrl) {
+        try {
+            this.socket = new WebSocket(wsUrl);
+            
+            this.socket.onopen = () => {
+                console.log('WebSocket connected successfully');
+                this.stopPollingFallback(); // Stop polling if WebSocket connects
+                
+                // Authenticate the WebSocket connection
+                this.sendSignalingMessage({
+                    type: 'auth',
+                    user_id: this.getCurrentUserId()
+                });
+            };
 
-        this.socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            this.handleSignalingMessage(data);
-        };
-        
-        this.socket.onclose = () => {
-            console.log('WebSocket disconnected, starting polling fallback...');
-            this.socket = null;
+            this.socket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('WebSocket message received:', data.type);
+                    this.handleSignalingMessage(data);
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+            
+            this.socket.onclose = (event) => {
+                console.log('WebSocket disconnected:', event.code, event.reason);
+                this.socket = null;
+                
+                // Start polling fallback after a delay
+                setTimeout(() => {
+                    if (!this.socket) {
+                        console.log('Starting polling fallback...');
+                        this.startPollingFallback();
+                    }
+                }, 2000);
+            };
+            
+            this.socket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                this.socket = null;
+                
+                // Start polling fallback immediately on error
+                setTimeout(() => {
+                    if (!this.socket) {
+                        console.log('WebSocket failed, starting polling fallback...');
+                        this.startPollingFallback();
+                    }
+                }, 1000);
+            };
+            
+        } catch (error) {
+            console.error('Failed to create WebSocket:', error);
             this.startPollingFallback();
-        };
-        
-        this.socket.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            console.log('WebSocket connection failed. Switching to polling mode.');
-            this.socket = null;
-            this.startPollingFallback();
-        };
+        }
     }
 
     async initiateCall(type, targetId, callType = 'video') {
         try {
-            // Check HTTPS requirement
-            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-                throw new Error('Video calling requires HTTPS connection. Please use https:// instead of http://');
-            }
-
+            console.log(`Initiating ${callType} call:`, { type, targetId });
+            
             // Check if getUserMedia is supported
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 throw new Error('Your browser does not support video calling. Please use Chrome 60+, Firefox 55+, Safari 11+, or Edge 79+.');
             }
 
-            // Check if we're in a secure context
-            if (!window.isSecureContext && location.hostname !== 'localhost') {
-                throw new Error('Video calling requires a secure connection (HTTPS).');
-            }
-
             // Request permissions explicitly with better error handling
             const constraints = {
-                video: callType === 'video' ? { width: 640, height: 480 } : false,
-                audio: { echoCancellation: true, noiseSuppression: true }
+                video: callType === 'video' ? { 
+                    width: { ideal: 640 }, 
+                    height: { ideal: 480 },
+                    facingMode: 'user'
+                } : false,
+                audio: { 
+                    echoCancellation: true, 
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
             };
             
             console.log('Requesting media permissions:', constraints);
@@ -111,11 +139,11 @@ class VideoCallManager {
             // Try to get user media with timeout
             const mediaPromise = navigator.mediaDevices.getUserMedia(constraints);
             const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Permission request timed out')), 10000)
+                setTimeout(() => reject(new Error('Permission request timed out')), 15000)
             );
             
             this.localStream = await Promise.race([mediaPromise, timeoutPromise]);
-            console.log('Media permissions granted:', this.localStream);
+            console.log('Media permissions granted, tracks:', this.localStream.getTracks().length);
             
             if (!this.localStream) {
                 throw new Error('Failed to get media stream');
@@ -123,11 +151,12 @@ class VideoCallManager {
             
             // Create call via API
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            const token = localStorage.getItem('auth_token') || document.querySelector('meta[name="api-token"]')?.getAttribute('content');
+            const token = localStorage.getItem('auth_token') || 
+                         localStorage.getItem('token') || 
+                         document.querySelector('meta[name="api-token"]')?.getAttribute('content');
             
             const headers = {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
                 'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json'
             };
@@ -135,6 +164,11 @@ class VideoCallManager {
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
             }
+            if (csrfToken) {
+                headers['X-CSRF-TOKEN'] = csrfToken;
+            }
+            
+            console.log('Making API call to initiate call...');
             
             const response = await fetch('/api/calls/initiate', {
                 method: 'POST',
@@ -148,23 +182,35 @@ class VideoCallManager {
                 })
             });
 
+            console.log('API response status:', response.status);
+
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('API Error Response:', errorText);
-                throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                throw new Error(`API Error: ${response.status} - ${errorText}`);
             }
             
             const result = await response.json();
+            console.log('API response:', result);
+            
             if (result.success) {
                 this.currentCall = result.call;
                 this.showCallInterface();
                 this.setupLocalVideo();
                 
-                // Call invitation is now sent by the backend
-                console.log('Call initiated successfully:', this.currentCall);
+                console.log('Call initiated successfully:', this.currentCall.call_id);
+                return result;
+            } else {
+                throw new Error(result.message || 'Failed to initiate call');
             }
         } catch (error) {
             console.error('Error initiating call:', error);
+            
+            // Clean up media stream if call failed
+            if (this.localStream) {
+                this.localStream.getTracks().forEach(track => track.stop());
+                this.localStream = null;
+            }
             
             let errorMessage = 'Failed to start call. ';
             let troubleshooting = '';
@@ -181,27 +227,19 @@ class VideoCallManager {
             } else if (error.name === 'OverconstrainedError') {
                 errorMessage += 'Camera or microphone settings are not supported.';
                 troubleshooting = '\n\nTroubleshooting:\n1. Try using a different camera/microphone\n2. Update your browser\n3. Check device drivers';
-            } else if (error.message.includes('HTTPS')) {
-                errorMessage = error.message;
-                troubleshooting = '\n\nTroubleshooting:\n1. Use https:// instead of http://\n2. Contact your administrator for SSL setup';
             } else if (error.message.includes('timed out')) {
                 errorMessage += 'Permission request timed out.';
                 troubleshooting = '\n\nTroubleshooting:\n1. Look for permission popup in your browser\n2. Check if popup blocker is enabled\n3. Try refreshing and clicking quickly';
+            } else if (error.message.includes('API Error')) {
+                errorMessage += 'Server error occurred.';
+                troubleshooting = '\n\nTroubleshooting:\n1. Check your internet connection\n2. Make sure you are logged in\n3. Try refreshing the page';
             } else {
                 errorMessage += error.message || 'Unknown error occurred.';
                 troubleshooting = '\n\nTroubleshooting:\n1. Refresh the page\n2. Check browser console for errors\n3. Try a different browser';
             }
             
             alert(errorMessage + troubleshooting);
-            
-            // Also show in console for debugging
-            console.group('Video Call Error Details');
-            console.error('Error name:', error.name);
-            console.error('Error message:', error.message);
-            console.error('Browser:', navigator.userAgent);
-            console.error('Protocol:', location.protocol);
-            console.error('Secure context:', window.isSecureContext);
-            console.groupEnd();
+            throw error;
         }
     }
 
@@ -611,8 +649,19 @@ class VideoCallManager {
         if (userMeta) {
             return parseInt(userMeta.getAttribute('content'));
         }
-        // Fallback - try to get from global variable
-        return window.currentUserId || 1;
+        
+        // Try to get from global variables
+        if (window.currentUserId) {
+            return parseInt(window.currentUserId);
+        }
+        
+        if (window.Laravel && window.Laravel.user && window.Laravel.user.id) {
+            return parseInt(window.Laravel.user.id);
+        }
+        
+        // Fallback for testing
+        console.warn('User ID not found, using fallback ID 1');
+        return 1;
     }
 
     initializeFallbackSocket() {
@@ -698,19 +747,23 @@ class VideoCallManager {
      */
     startPollingFallback() {
         if (this.pollingInterval) {
-            clearInterval(this.pollingInterval);
+            return; // Already polling
         }
         
         console.log('Starting polling fallback for call invitations...');
         
         this.pollingInterval = setInterval(async () => {
             try {
-                const token = localStorage.getItem('auth_token') || document.querySelector('meta[name="api-token"]')?.getAttribute('content');
+                // Get authentication tokens
+                const token = localStorage.getItem('auth_token') || 
+                             localStorage.getItem('token') || 
+                             document.querySelector('meta[name="api-token"]')?.getAttribute('content');
                 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
                 
                 const headers = {
                     'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
                 };
                 
                 if (token) {
@@ -732,11 +785,14 @@ class VideoCallManager {
                         console.log('Received call invitation via polling:', result.invitation);
                         this.handleSignalingMessage(result.invitation);
                     }
+                } else if (response.status === 401) {
+                    console.log('Authentication failed during polling, stopping...');
+                    this.stopPollingFallback();
                 }
             } catch (error) {
                 console.error('Polling error:', error);
             }
-        }, 2000); // Poll every 2 seconds
+        }, 3000); // Poll every 3 seconds
     }
     
     /**

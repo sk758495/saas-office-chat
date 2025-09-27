@@ -152,3 +152,41 @@ Route::middleware('auth:sanctum')->get('/test-auth', function (Request $request)
         'message' => 'Authentication working'
     ]);
 });
+
+// Test route without authentication for basic testing
+Route::get('/test-basic', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'Basic API working',
+        'timestamp' => now(),
+        'server' => request()->getHost()
+    ]);
+});
+
+// Test call initiation without full authentication (for testing only)
+Route::post('/test-call-initiate', function (Request $request) {
+    try {
+        // Create a test call record
+        $call = \App\Models\Call::create([
+            'call_id' => \Illuminate\Support\Str::uuid(),
+            'type' => $request->type ?? 'one_to_one',
+            'call_type' => $request->call_type ?? 'video',
+            'status' => 'initiated',
+            'caller_id' => 1, // Test user ID
+            'chat_id' => $request->chat_id,
+            'group_id' => $request->group_id,
+            'started_at' => now(),
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'call' => $call,
+            'message' => 'Test call created successfully'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to create test call: ' . $e->getMessage()
+        ], 500);
+    }
+});
