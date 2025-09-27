@@ -35,12 +35,8 @@ class VideoCallManager {
     }
 
     initializeSocket() {
-        // Skip WebSocket for production if not available
-        if (window.location.hostname === 'emplora.jashmainfosoft.com') {
-            console.log('WebSocket disabled for production. Using direct calling mode.');
-            this.socket = null;
-            return;
-        }
+        // Try WebSocket connection for all environments
+        console.log('Initializing WebSocket connection...');
         
         // Initialize WebSocket connection for signaling
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -74,20 +70,16 @@ class VideoCallManager {
         };
         
         this.socket.onclose = () => {
-            console.log('WebSocket disconnected, attempting to reconnect...');
-            // Try fallback connection if main connection fails
-            if (window.location.protocol === 'https:' && !this.fallbackAttempted) {
-                this.fallbackAttempted = true;
-                console.log('Trying fallback WebSocket connection...');
-                setTimeout(() => this.initializeFallbackSocket(), 1000);
-            } else {
-                setTimeout(() => this.initializeSocket(), 3000);
-            }
+            console.log('WebSocket disconnected, starting polling fallback...');
+            this.socket = null;
+            this.startPollingFallback();
         };
         
         this.socket.onerror = (error) => {
             console.error('WebSocket error:', error);
-            console.log('WebSocket connection failed. Video calling may not work properly.');
+            console.log('WebSocket connection failed. Switching to polling mode.');
+            this.socket = null;
+            this.startPollingFallback();
         };
     }
 
@@ -168,14 +160,8 @@ class VideoCallManager {
                 this.showCallInterface();
                 this.setupLocalVideo();
                 
-                // Send call invitation via WebSocket
-                this.sendSignalingMessage({
-                    type: 'call-invitation',
-                    callId: this.currentCall.call_id,
-                    from: this.currentCall.caller.id,
-                    callType: callType,
-                    participants: result.call.participants
-                });
+                // Call invitation is now sent by the backend
+                console.log('Call initiated successfully:', this.currentCall);
             }
         } catch (error) {
             console.error('Error initiating call:', error);
@@ -246,7 +232,7 @@ class VideoCallManager {
                 this.setupLocalVideo();
                 this.isCallActive = true;
                 
-                // Send join confirmation via WebSocket
+                // Send join confirmation
                 this.sendSignalingMessage({
                     type: 'call-joined',
                     callId: callId,
@@ -703,6 +689,65 @@ class VideoCallManager {
         this.currentCall = null;
         this.isCallActive = false;
         this.fallbackAttempted = false;
+        this.stopPollingFallback();
+        this.pollingInterval = null;
+    }
+    
+    /**
+     * Start polling for call invitations when WebSocket is not available
+     */
+    startPollingFallback() {
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+        }
+        
+        console.log('Starting polling fallback for call invitations...');
+        
+        this.pollingInterval = setInterval(async () => {
+            try {
+                const token = localStorage.getItem('auth_token') || document.querySelector('meta[name="api-token"]')?.getAttribute('content');
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                
+                const headers = {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                };
+                
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                if (csrfToken) {
+                    headers['X-CSRF-TOKEN'] = csrfToken;
+                }
+                
+                const response = await fetch('/api/calls/pending-invitations', {
+                    method: 'GET',
+                    headers: headers,
+                    credentials: 'same-origin'
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.invitation) {
+                        console.log('Received call invitation via polling:', result.invitation);
+                        this.handleSignalingMessage(result.invitation);
+                    }
+                }
+            } catch (error) {
+                console.error('Polling error:', error);
+            }
+        }, 2000); // Poll every 2 seconds
+    }
+    
+    /**
+     * Stop polling fallback
+     */
+    stopPollingFallback() {
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
+            console.log('Stopped polling fallback');
+        }
     }
 }
 

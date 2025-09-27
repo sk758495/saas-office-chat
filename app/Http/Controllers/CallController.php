@@ -10,6 +10,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 
 class CallController extends Controller
 {
@@ -141,9 +143,62 @@ class CallController extends Controller
             ], 500);
         }
 
+        // Load the call with all necessary relationships
+        $callData = $call->load(['caller', 'participants', 'chat', 'group']);
+        
+        // Send call invitation via WebSocket broadcast
+        try {
+            $participants = [];
+            if ($request->type === 'one_to_one') {
+                $chat = Chat::find($request->chat_id);
+                $otherUser = $chat->getOtherUser(auth()->id());
+                if ($otherUser) {
+                    $participants[] = [
+                        'id' => $otherUser->id,
+                        'user_id' => $otherUser->id,
+                        'name' => $otherUser->name,
+                        'email' => $otherUser->email
+                    ];
+                }
+            } else {
+                $group = Group::find($request->group_id);
+                $members = $group->members()->where('user_id', '!=', auth()->id())->get();
+                foreach ($members as $member) {
+                    $participants[] = [
+                        'id' => $member->id,
+                        'user_id' => $member->id,
+                        'name' => $member->name,
+                        'email' => $member->email
+                    ];
+                }
+            }
+            
+            // Broadcast call invitation
+            $broadcastData = [
+                'type' => 'call-invitation',
+                'callId' => $call->call_id,
+                'caller' => [
+                    'id' => auth()->id(),
+                    'name' => auth()->user()->name,
+                    'email' => auth()->user()->email
+                ],
+                'callerName' => auth()->user()->name,
+                'callType' => $request->call_type,
+                'participants' => $participants,
+                'timestamp' => now()->timestamp
+            ];
+            
+            // Try to broadcast via WebSocket server
+            $this->broadcastCallInvitation($broadcastData);
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to broadcast call invitation:', ['error' => $e->getMessage()]);
+            // Don't fail the call creation if broadcast fails
+        }
+
         return response()->json([
             'success' => true,
-            'call' => $call->load(['caller', 'participants', 'chat', 'group'])
+            'call' => $callData
         ]);
     }
 
@@ -285,5 +340,81 @@ class CallController extends Controller
         }
 
         return Storage::disk('public')->download($recording->file_path, $recording->file_name);
+    }
+    
+    /**
+     * Broadcast call invitation via WebSocket server
+     */
+    private function broadcastCallInvitation($data)
+    {
+        try {
+            // Try local WebSocket server first
+            $response = Http::timeout(3)->post('http://localhost:6001/broadcast', $data);
+            
+            if ($response->successful()) {
+                \Log::info('Call invitation broadcasted successfully via local WebSocket');
+                return;
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Local WebSocket broadcast failed:', ['error' => $e->getMessage()]);
+        }
+        
+        try {
+            // Try production WebSocket server
+            $response = Http::timeout(3)->post('https://emplora.jashmainfosoft.com:6001/broadcast', $data);
+            
+            if ($response->successful()) {
+                \Log::info('Call invitation broadcasted successfully via production WebSocket');
+                return;
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Production WebSocket broadcast failed:', ['error' => $e->getMessage()]);
+        }
+        
+        // Fallback: Store invitation in database for polling
+        $this->storeCallInvitation($data);
+    }
+    
+    /**
+     * Store call invitation in database as fallback
+     */
+    private function storeCallInvitation($data)
+    {
+        try {
+            // Store in cache or database for participants to poll
+            foreach ($data['participants'] as $participant) {
+                Cache::put(
+                    "call_invitation_{$participant['id']}", 
+                    $data, 
+                    now()->addMinutes(2)
+                );
+            }
+            \Log::info('Call invitation stored in cache as fallback');
+        } catch (\Exception $e) {
+            \Log::error('Failed to store call invitation fallback:', ['error' => $e->getMessage()]);
+        }
+    }
+    
+    /**
+     * Get pending call invitations for current user
+     */
+    public function getPendingInvitations(Request $request)
+    {
+        $userId = auth()->id();
+        $invitation = Cache::get("call_invitation_{$userId}");
+        
+        if ($invitation) {
+            // Clear the invitation after retrieving
+            Cache::forget("call_invitation_{$userId}");
+            return response()->json([
+                'success' => true,
+                'invitation' => $invitation
+            ]);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'invitation' => null
+        ]);
     }
 }

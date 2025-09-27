@@ -140,6 +140,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/calls/history', [App\Http\Controllers\CallController::class, 'getCallHistory']);
     Route::get('/calls/{call}/recordings', [App\Http\Controllers\CallController::class, 'getCallRecordings']);
     Route::get('/recordings/{recording}/download', [App\Http\Controllers\CallController::class, 'downloadRecording']);
+    Route::get('/calls/pending-invitations', [App\Http\Controllers\CallController::class, 'getPendingInvitations']);
 });
 
 // Test route to debug authentication
