@@ -467,6 +467,9 @@
                             <button class="btn btn-light btn-sm" id="soundToggle" onclick="toggleSound()" title="Disable Sounds">
                                 <i class="fas fa-volume-up"></i>
                             </button>
+                            <button class="btn btn-light btn-sm" onclick="testNotificationPermission()" title="Test Notifications">
+                                <i class="fas fa-bell"></i>
+                            </button>
                             <div class="dropdown">
                                 <button class="btn btn-light btn-sm rounded-circle" data-bs-toggle="dropdown">
                                     <i class="fas fa-user"></i>
@@ -792,6 +795,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/notification-sound.js"></script>
+    <script src="/js/notification-permission.js"></script>
     <script src="/js/emoji-picker.js"></script>
     <script src="/js/emoji-shortcuts.js"></script>
     <script>
@@ -807,10 +811,8 @@
         let lastMessageCount = 0;
         let lastGroupMessageCounts = {};
         
-        // Request notification permission immediately
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
+        // Notification permission is now handled by NotificationPermissionManager
+        // which will show reminders every minute if permission is not granted
 
         // Show browser notification - works everywhere
         function showBrowserNotification(message, senderName, chatId, isGroup = false) {
@@ -1885,6 +1887,24 @@
             }
         });
         
+        // Test notification permission function
+        function testNotificationPermission() {
+            console.log('Test notification button clicked');
+            if (window.notificationManager) {
+                window.notificationManager.showReminderModal();
+            } else {
+                console.log('Notification manager not found, requesting permission directly');
+                if ('Notification' in window) {
+                    Notification.requestPermission().then(permission => {
+                        console.log('Permission result:', permission);
+                        if (permission === 'granted') {
+                            new Notification('Test', { body: 'Notifications are working!' });
+                        }
+                    });
+                }
+            }
+        }
+
         // Initialize button states
         document.addEventListener('DOMContentLoaded', function() {
             const soundBtn = document.getElementById('soundToggle');

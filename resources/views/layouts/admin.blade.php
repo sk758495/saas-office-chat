@@ -60,7 +60,7 @@
 
     <div class="flex">
         <!-- Sidebar -->
-        <aside id="sidebar" class="sidebar-transition w-64 bg-white shadow-lg h-screen fixed lg:relative lg:translate-x-0 -translate-x-full z-20">
+        <aside id="sidebar" class="sidebar-transition w-64 bg-white shadow-lg min-h-screen fixed lg:relative lg:translate-x-0 -translate-x-full z-20">
             <div class="p-6">
                 <nav class="space-y-2">
                     <a href="{{ route('company.dashboard') }}" class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-orange-50 hover:text-orange-600 transition-colors {{ request()->routeIs('company.dashboard') ? 'bg-orange-50 text-orange-600 border-r-4 border-orange-500' : '' }}">
