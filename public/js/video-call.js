@@ -66,19 +66,36 @@ class VideoCallManager {
 
     async initiateCall(type, targetId, callType = 'video') {
         try {
-            // Check if getUserMedia is supported
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                throw new Error('Your browser does not support video calling. Please use a modern browser like Chrome, Firefox, or Safari.');
+            // Check HTTPS requirement
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                throw new Error('Video calling requires HTTPS connection. Please use https:// instead of http://');
             }
 
-            // Request permissions explicitly
+            // Check if getUserMedia is supported
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('Your browser does not support video calling. Please use Chrome 60+, Firefox 55+, Safari 11+, or Edge 79+.');
+            }
+
+            // Check if we're in a secure context
+            if (!window.isSecureContext && location.hostname !== 'localhost') {
+                throw new Error('Video calling requires a secure connection (HTTPS).');
+            }
+
+            // Request permissions explicitly with better error handling
             const constraints = {
-                video: callType === 'video',
-                audio: true
+                video: callType === 'video' ? { width: 640, height: 480 } : false,
+                audio: { echoCancellation: true, noiseSuppression: true }
             };
             
             console.log('Requesting media permissions:', constraints);
-            this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+            
+            // Try to get user media with timeout
+            const mediaPromise = navigator.mediaDevices.getUserMedia(constraints);
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Permission request timed out')), 10000)
+            );
+            
+            this.localStream = await Promise.race([mediaPromise, timeoutPromise]);
             console.log('Media permissions granted:', this.localStream);
             
             if (!this.localStream) {
@@ -137,20 +154,41 @@ class VideoCallManager {
             console.error('Error initiating call:', error);
             
             let errorMessage = 'Failed to start call. ';
+            let troubleshooting = '';
             
             if (error.name === 'NotAllowedError') {
-                errorMessage += 'Please allow camera and microphone access when prompted by your browser.';
+                errorMessage += 'Camera/microphone access was denied.';
+                troubleshooting = '\n\nTroubleshooting:\n1. Click the camera/microphone icon in your browser\'s address bar\n2. Select "Allow" for camera and microphone\n3. Refresh the page and try again';
             } else if (error.name === 'NotFoundError') {
-                errorMessage += 'No camera or microphone found. Please connect your devices.';
+                errorMessage += 'No camera or microphone found.';
+                troubleshooting = '\n\nTroubleshooting:\n1. Connect your camera/microphone\n2. Check if other apps are using them\n3. Try restarting your browser';
             } else if (error.name === 'NotReadableError') {
-                errorMessage += 'Camera or microphone is already in use by another application.';
+                errorMessage += 'Camera or microphone is already in use.';
+                troubleshooting = '\n\nTroubleshooting:\n1. Close other video calling apps (Zoom, Teams, etc.)\n2. Close other browser tabs using camera/microphone\n3. Restart your browser';
             } else if (error.name === 'OverconstrainedError') {
-                errorMessage += 'Camera or microphone constraints cannot be satisfied.';
+                errorMessage += 'Camera or microphone settings are not supported.';
+                troubleshooting = '\n\nTroubleshooting:\n1. Try using a different camera/microphone\n2. Update your browser\n3. Check device drivers';
+            } else if (error.message.includes('HTTPS')) {
+                errorMessage = error.message;
+                troubleshooting = '\n\nTroubleshooting:\n1. Use https:// instead of http://\n2. Contact your administrator for SSL setup';
+            } else if (error.message.includes('timed out')) {
+                errorMessage += 'Permission request timed out.';
+                troubleshooting = '\n\nTroubleshooting:\n1. Look for permission popup in your browser\n2. Check if popup blocker is enabled\n3. Try refreshing and clicking quickly';
             } else {
-                errorMessage += error.message || 'Please check your camera/microphone permissions.';
+                errorMessage += error.message || 'Unknown error occurred.';
+                troubleshooting = '\n\nTroubleshooting:\n1. Refresh the page\n2. Check browser console for errors\n3. Try a different browser';
             }
             
-            alert(errorMessage);
+            alert(errorMessage + troubleshooting);
+            
+            // Also show in console for debugging
+            console.group('Video Call Error Details');
+            console.error('Error name:', error.name);
+            console.error('Error message:', error.message);
+            console.error('Browser:', navigator.userAgent);
+            console.error('Protocol:', location.protocol);
+            console.error('Secure context:', window.isSecureContext);
+            console.groupEnd();
         }
     }
 

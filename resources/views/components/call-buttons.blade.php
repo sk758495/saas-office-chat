@@ -25,16 +25,27 @@
 
 <script>
 async function initiateCall(type, targetId, callType) {
-    if (window.videoCallManager) {
-        try {
-            await window.videoCallManager.initiateCall(type, targetId, callType);
-        } catch (error) {
-            console.error('Failed to initiate call:', error);
-            alert('Failed to start call. Please check your permissions and try again.');
-        }
-    } else {
-        console.error('Video call manager not initialized');
-        alert('Video calling is not available. Please refresh the page.');
+    if (!window.videoCallManager) {
+        alert('Video calling is not available. Please refresh the page and try again.');
+        return;
+    }
+    
+    // Check basic requirements first
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Your browser does not support video calling.\n\nPlease use:\n• Chrome 60+\n• Firefox 55+\n• Safari 11+\n• Edge 79+');
+        return;
+    }
+    
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        alert('Video calling requires HTTPS connection.\n\nPlease use https:// instead of http://');
+        return;
+    }
+    
+    try {
+        await window.videoCallManager.initiateCall(type, targetId, callType);
+    } catch (error) {
+        console.error('Failed to initiate call:', error);
+        // Error handling is done in the VideoCallManager
     }
 }
 </script>
