@@ -13,24 +13,23 @@ class VideoCallManager {
         this.initializeSocket();
     }
     
-    // Check and request permissions
+    // Check if permissions are already granted
     async checkPermissions(callType = 'video') {
         try {
-            const constraints = {
-                video: callType === 'video',
-                audio: true
-            };
+            // Check if getUserMedia is supported
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                return false;
+            }
             
-            // Test permissions by requesting media
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            // Check current permission status without requesting
+            const videoPermission = callType === 'video' ? await navigator.permissions.query({name: 'camera'}) : {state: 'granted'};
+            const audioPermission = await navigator.permissions.query({name: 'microphone'});
             
-            // Stop the test stream immediately
-            stream.getTracks().forEach(track => track.stop());
-            
-            return true;
+            return videoPermission.state === 'granted' && audioPermission.state === 'granted';
         } catch (error) {
-            console.error('Permission check failed:', error);
-            return false;
+            // Fallback: permissions API not supported, assume we need to request
+            console.log('Permissions API not supported, will request during call');
+            return true; // Allow the call to proceed
         }
     }
 

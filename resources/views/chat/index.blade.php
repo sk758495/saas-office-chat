@@ -2478,64 +2478,26 @@
                 return;
             }
             
-            // Store call type for modal
-            pendingCallType = callType;
-            
-            // Update modal content
-            const title = document.getElementById('permissionTitle');
-            const message = document.getElementById('permissionMessage');
-            const startBtn = document.getElementById('startCallBtn');
-            
-            if (callType === 'video') {
-                title.textContent = 'Camera & Microphone Access Required';
-                message.textContent = 'This will request access to your camera and microphone for video calling.';
-                startBtn.innerHTML = '<i class="fas fa-video me-1"></i>Start Video Call';
-            } else {
-                title.textContent = 'Microphone Access Required';
-                message.textContent = 'This will request access to your microphone for audio calling.';
-                startBtn.innerHTML = '<i class="fas fa-phone me-1"></i>Start Audio Call';
-            }
-            
-            // Show permission modal
-            new bootstrap.Modal(document.getElementById('callPermissionModal')).show();
-        }
-        
-        // Handle start call button click
-        document.getElementById('startCallBtn').addEventListener('click', async function() {
-            const modal = bootstrap.Modal.getInstance(document.getElementById('callPermissionModal'));
-            const btn = this;
-            const originalContent = btn.innerHTML;
-            
-            // Show loading
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Starting...';
-            btn.disabled = true;
-            
             try {
                 if (currentGroupId) {
-                    await videoCallManager.initiateCall('group', currentGroupId, pendingCallType);
+                    await videoCallManager.initiateCall('group', currentGroupId, callType);
                 } else if (currentChatUserId) {
                     const chatId = currentChat ? currentChat.id : null;
                     if (chatId) {
-                        await videoCallManager.initiateCall('one_to_one', chatId, pendingCallType);
+                        await videoCallManager.initiateCall('one_to_one', chatId, callType);
                     } else {
                         throw new Error('Unable to start call. Please try again.');
                     }
                 } else {
                     throw new Error('Please select a user or group to call.');
                 }
-                
-                // Close modal on success
-                modal.hide();
-                
             } catch (error) {
                 console.error('Failed to start call:', error);
                 alert(error.message || 'Failed to start call. Please check your permissions and try again.');
-            } finally {
-                // Reset button
-                btn.innerHTML = originalContent;
-                btn.disabled = false;
             }
-        });
+        }
+        
+
         
         // Initialize video call manager when page loads
         document.addEventListener('DOMContentLoaded', function() {
