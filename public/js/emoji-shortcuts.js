@@ -517,4 +517,24 @@ class EmojiShortcuts {
                     input.value = before + emoji + after;
                     
                     // Adjust cursor position
-                    const newPos = start + emoji.length + (cursorPos - end);\n                    input.setSelectionRange(newPos, newPos);\n                    \n                    // Trigger input event\n                    input.dispatchEvent(new Event('input', { bubbles: true }));\n                    \n                    return; // Only replace one at a time\n                }\n            }\n        }\n    }\n    \n    escapeRegex(string) {\n        return string.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n    }\n}\n\n// Initialize emoji shortcuts when DOM is loaded\ndocument.addEventListener('DOMContentLoaded', function() {\n    window.emojiShortcuts = new EmojiShortcuts();\n});"
+                    const newPos = start + emoji.length + (cursorPos - end);
+                    input.setSelectionRange(newPos, newPos);
+                    
+                    // Trigger input event
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    
+                    return; // Only replace one at a time
+                }
+            }
+        }
+    }
+    
+    escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+}
+
+// Initialize emoji shortcuts when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    window.emojiShortcuts = new EmojiShortcuts();
+});"

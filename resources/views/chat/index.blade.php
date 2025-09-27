@@ -626,7 +626,7 @@
                             <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('folderInput').click()" title="Upload Folder">
                                 <i class="fas fa-folder"></i>
                             </button>
-                            <input type="text" class="form-control" id="messageText" placeholder="Type a message... (Try :) or :heart: or Ctrl+; for emojis)">
+                            <input type="text" class="form-control" id="messageText" placeholder="Type a message... (Try :) or :heart: or Ctrl+; for emojis)" autocomplete="off">
                             <button type="button" class="btn btn-outline-secondary" id="emojiBtn" onclick="toggleEmojiPicker()" title="Add Emoji">
                                 <i class="fas fa-smile"></i>
                             </button>
@@ -796,8 +796,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/notification-sound.js"></script>
     <script src="/js/notification-permission.js"></script>
-    <script src="/js/emoji-picker.js"></script>
-    <script src="/js/emoji-shortcuts.js"></script>
+    <script src="/js/emoji-simple.js"></script>
     <script>
         let currentChatUserId = null;
         let currentChat = null;
@@ -1904,6 +1903,8 @@
                 }
             }
         }
+        
+
 
         // Initialize button states
         document.addEventListener('DOMContentLoaded', function() {

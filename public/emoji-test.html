@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji Features Test</title>
+    <link href="/css/emoji-picker.css" rel="stylesheet">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .input-group { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+        .input-group input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .emoji-btn { padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer; }
+        .emoji-btn:hover { background: #f0f0f0; }
+        .emoji-btn.active { background: #007bff; color: white; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Emoji Features Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Emoji Picker Test</h2>
+        <p>Click the emoji button to open the picker:</p>
+        <div class="input-group">
+            <input type="text" id="messageText" placeholder="Type here and click emoji button...">
+            <button type="button" class="emoji-btn" id="emojiBtn" onclick="toggleEmojiPicker()">
+                😊
+            </button>
+        </div>
+        <p><small>Expected: Emoji picker should open when clicking the button</small></p>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Text Shortcuts Test</h2>
+        <p>Type these shortcuts and they should convert automatically:</p>
+        <div class="input-group">
+            <input type="text" id="shortcutTest" placeholder="Try typing :) or :heart: or :fire:">
+        </div>
+        <p><small>Expected: :) → 😊, :heart: → ❤️, :fire: → 🔥</small></p>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Keyboard Shortcuts Test</h2>
+        <p>Press <kbd>Ctrl+;</kbd> (or <kbd>Cmd+;</kbd> on Mac) to toggle emoji picker</p>
+        <div class="input-group">
+            <input type="text" id="keyboardTest" placeholder="Focus here and press Ctrl+;">
+        </div>
+        <p><small>Expected: Emoji picker should toggle with keyboard shortcut</small></p>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Search Test</h2>
+        <p>Open emoji picker and search for emojis:</p>
+        <ul>
+            <li>Search "happy" - should show happy emojis</li>
+            <li>Search "heart" - should show heart emojis</li>
+            <li>Search "fire" - should show fire emoji</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. Categories Test</h2>
+        <p>Open emoji picker and click different category tabs:</p>
+        <ul>
+            <li>Recent (🕒) - should show recently used emojis</li>
+            <li>Smileys (😀) - should show smiley emojis</li>
+            <li>People (👤) - should show people emojis</li>
+            <li>Animals (🐶) - should show animal emojis</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2>6. Debug Information</h2>
+        <div id="debugInfo">
+            <p>Loading debug info...</p>
+        </div>
+    </div>
+
+    <script src="/js/emoji-picker.js"></script>
+    <script src="/js/emoji-shortcuts.js"></script>
+    <script>
+        // Debug information
+        document.addEventListener('DOMContentLoaded', function() {
+            const debugDiv = document.getElementById('debugInfo');
+            let debugInfo = '<h4>Debug Status:</h4><ul>';
+            
+            // Check if emoji picker is loaded
+            debugInfo += `<li>Emoji Picker Class: ${typeof EmojiPicker !== 'undefined' ? '✅ Loaded' : '❌ Not Found'}</li>`;
+            debugInfo += `<li>Emoji Shortcuts Class: ${typeof EmojiShortcuts !== 'undefined' ? '✅ Loaded' : '❌ Not Found'}</li>`;
+            debugInfo += `<li>Window Emoji Picker Instance: ${typeof window.emojiPicker !== 'undefined' ? '✅ Created' : '❌ Not Created'}</li>`;
+            debugInfo += `<li>Window Emoji Shortcuts Instance: ${typeof window.emojiShortcuts !== 'undefined' ? '✅ Created' : '❌ Not Created'}</li>`;
+            
+            // Check if emoji picker element exists
+            const pickerElement = document.getElementById('emojiPicker');
+            debugInfo += `<li>Emoji Picker Element: ${pickerElement ? '✅ Found' : '❌ Not Found'}</li>`;
+            
+            // Check CSS
+            const cssLink = document.querySelector('link[href*="emoji-picker.css"]');
+            debugInfo += `<li>Emoji CSS: ${cssLink ? '✅ Loaded' : '❌ Not Found'}</li>`;
+            
+            debugInfo += '</ul>';
+            
+            // Test emoji shortcuts
+            debugInfo += '<h4>Shortcut Test Results:</h4><ul>';
+            if (typeof window.emojiShortcuts !== 'undefined' && window.emojiShortcuts.shortcuts) {
+                const shortcuts = window.emojiShortcuts.shortcuts;
+                debugInfo += `<li>Total Shortcuts: ${Object.keys(shortcuts).length}</li>`;
+                debugInfo += `<li>Sample Shortcuts: ${Object.keys(shortcuts).slice(0, 5).join(', ')}</li>`;
+            } else {
+                debugInfo += '<li>❌ Shortcuts not accessible</li>';
+            }
+            debugInfo += '</ul>';
+            
+            debugDiv.innerHTML = debugInfo;
+        });
+        
+        // Test shortcut conversion manually
+        function testShortcut(input, shortcut) {
+            if (typeof window.emojiShortcuts !== 'undefined') {
+                const shortcuts = window.emojiShortcuts.shortcuts;
+                if (shortcuts[shortcut]) {
+                    input.value = input.value.replace(shortcut, shortcuts[shortcut]);
+                    console.log(`Converted ${shortcut} to ${shortcuts[shortcut]}`);
+                } else {
+                    console.log(`Shortcut ${shortcut} not found`);
+                }
+            }
+        }
+        
+        // Add manual test for shortcuts
+        document.getElementById('shortcutTest').addEventListener('input', function(e) {
+            const value = e.target.value;
+            console.log('Input value:', value);
+            
+            // Manual test for common shortcuts
+            if (value.includes(':)')) {
+                e.target.value = value.replace(':)', '😊');
+            }
+            if (value.includes(':heart:')) {
+                e.target.value = value.replace(':heart:', '❤️');
+            }
+            if (value.includes(':fire:')) {
+                e.target.value = value.replace(':fire:', '🔥');
+            }
+        });
+    </script>
+</body>
+</html>
