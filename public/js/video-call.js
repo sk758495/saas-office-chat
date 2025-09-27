@@ -12,6 +12,27 @@ class VideoCallManager {
         
         this.initializeSocket();
     }
+    
+    // Check and request permissions
+    async checkPermissions(callType = 'video') {
+        try {
+            const constraints = {
+                video: callType === 'video',
+                audio: true
+            };
+            
+            // Test permissions by requesting media
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            
+            // Stop the test stream immediately
+            stream.getTracks().forEach(track => track.stop());
+            
+            return true;
+        } catch (error) {
+            console.error('Permission check failed:', error);
+            return false;
+        }
+    }
 
     initializeSocket() {
         // Initialize WebSocket connection for signaling
@@ -29,13 +50,24 @@ class VideoCallManager {
 
     async initiateCall(type, targetId, callType = 'video') {
         try {
-            // Get user media
+            // Check if getUserMedia is supported
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('Your browser does not support video calling. Please use a modern browser like Chrome, Firefox, or Safari.');
+            }
+
+            // Request permissions explicitly
             const constraints = {
                 video: callType === 'video',
                 audio: true
             };
             
+            console.log('Requesting media permissions:', constraints);
             this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+            console.log('Media permissions granted:', this.localStream);
+            
+            if (!this.localStream) {
+                throw new Error('Failed to get media stream');
+            }
             
             // Create call via API
             const response = await fetch('/api/calls/initiate', {
@@ -69,7 +101,22 @@ class VideoCallManager {
             }
         } catch (error) {
             console.error('Error initiating call:', error);
-            alert('Failed to start call. Please check your camera/microphone permissions.');
+            
+            let errorMessage = 'Failed to start call. ';
+            
+            if (error.name === 'NotAllowedError') {
+                errorMessage += 'Please allow camera and microphone access when prompted by your browser.';
+            } else if (error.name === 'NotFoundError') {
+                errorMessage += 'No camera or microphone found. Please connect your devices.';
+            } else if (error.name === 'NotReadableError') {
+                errorMessage += 'Camera or microphone is already in use by another application.';
+            } else if (error.name === 'OverconstrainedError') {
+                errorMessage += 'Camera or microphone constraints cannot be satisfied.';
+            } else {
+                errorMessage += error.message || 'Please check your camera/microphone permissions.';
+            }
+            
+            alert(errorMessage);
         }
     }
 
