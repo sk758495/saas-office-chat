@@ -9,6 +9,7 @@ class VideoCallManager {
         this.currentCall = null;
         this.socket = null;
         this.isCallActive = false;
+        this.fallbackAttempted = false;
         
         this.initializeSocket();
     }
@@ -34,11 +35,29 @@ class VideoCallManager {
     }
 
     initializeSocket() {
+        // Skip WebSocket for production if not available
+        if (window.location.hostname === 'emplora.jashmainfosoft.com') {
+            console.log('WebSocket disabled for production. Using direct calling mode.');
+            this.socket = null;
+            return;
+        }
+        
         // Initialize WebSocket connection for signaling
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsHost = window.location.hostname;
-        const wsPort = '6001';
-        this.socket = new WebSocket(`${wsProtocol}//${wsHost}:${wsPort}/ws`);
+        
+        // For production HTTPS sites, use secure WebSocket without port
+        let wsUrl;
+        if (window.location.protocol === 'https:' && wsHost !== 'localhost') {
+            // Try secure WebSocket on standard port first
+            wsUrl = `wss://${wsHost}/ws`;
+        } else {
+            // Local development
+            wsUrl = `ws://${wsHost}:6001/ws`;
+        }
+        
+        console.log('Connecting to WebSocket:', wsUrl);
+        this.socket = new WebSocket(wsUrl);
         
         this.socket.onopen = () => {
             console.log('WebSocket connected for video calls');
@@ -56,11 +75,19 @@ class VideoCallManager {
         
         this.socket.onclose = () => {
             console.log('WebSocket disconnected, attempting to reconnect...');
-            setTimeout(() => this.initializeSocket(), 3000);
+            // Try fallback connection if main connection fails
+            if (window.location.protocol === 'https:' && !this.fallbackAttempted) {
+                this.fallbackAttempted = true;
+                console.log('Trying fallback WebSocket connection...');
+                setTimeout(() => this.initializeFallbackSocket(), 1000);
+            } else {
+                setTimeout(() => this.initializeSocket(), 3000);
+            }
         };
         
         this.socket.onerror = (error) => {
             console.error('WebSocket error:', error);
+            console.log('WebSocket connection failed. Video calling may not work properly.');
         };
     }
 
@@ -587,6 +614,8 @@ class VideoCallManager {
     sendSignalingMessage(message) {
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             this.socket.send(JSON.stringify(message));
+        } else {
+            console.log('WebSocket not available, message not sent:', message.type);
         }
     }
 
@@ -598,6 +627,63 @@ class VideoCallManager {
         }
         // Fallback - try to get from global variable
         return window.currentUserId || 1;
+    }
+
+    initializeFallbackSocket() {
+        // Fallback: try different WebSocket configurations
+        const fallbackUrls = [
+            `wss://${window.location.hostname}:443/ws`,
+            `ws://${window.location.hostname}:6001/ws`,
+            `wss://${window.location.hostname}:6001/ws`
+        ];
+        
+        let urlIndex = 0;
+        const tryConnection = () => {
+            if (urlIndex >= fallbackUrls.length) {
+                console.error('All WebSocket connection attempts failed');
+                return;
+            }
+            
+            const url = fallbackUrls[urlIndex];
+            console.log(`Trying fallback WebSocket: ${url}`);
+            
+            const testSocket = new WebSocket(url);
+            
+            testSocket.onopen = () => {
+                console.log('Fallback WebSocket connected:', url);
+                this.socket = testSocket;
+                this.setupSocketHandlers();
+            };
+            
+            testSocket.onerror = () => {
+                urlIndex++;
+                setTimeout(tryConnection, 1000);
+            };
+        };
+        
+        tryConnection();
+    }
+    
+    setupSocketHandlers() {
+        this.socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            this.handleSignalingMessage(data);
+        };
+        
+        this.socket.onclose = () => {
+            console.log('WebSocket disconnected');
+            setTimeout(() => this.initializeSocket(), 3000);
+        };
+        
+        this.socket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+        
+        // Authenticate the WebSocket connection
+        this.sendSignalingMessage({
+            type: 'auth',
+            user_id: this.getCurrentUserId()
+        });
     }
 
     cleanup() {
@@ -616,6 +702,7 @@ class VideoCallManager {
         
         this.currentCall = null;
         this.isCallActive = false;
+        this.fallbackAttempted = false;
     }
 }
 
