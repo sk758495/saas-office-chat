@@ -1,14 +1,14 @@
-const WebSocket = require('ws');
-const http = require('http');
-const express = require('express');
-const cors = require('cors');
+import { WebSocketServer } from 'ws';
+import http from 'http';
+import express from 'express';
+import cors from 'cors';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ 
+const wss = new WebSocketServer({ 
     server,
     path: '/ws'
 });
@@ -31,7 +31,7 @@ app.post('/broadcast', (req, res) => {
     
     // Broadcast to all connected WebSocket clients
     wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
+        if (client.readyState === 1) { // 1 = OPEN
             client.send(JSON.stringify(message));
         }
     });
@@ -40,17 +40,31 @@ app.post('/broadcast', (req, res) => {
 });
 
 wss.on('connection', (ws, req) => {
-    console.log('New WebSocket connection');
+    console.log('New WebSocket connection from:', req.socket.remoteAddress);
+    
+    // Send connection confirmation
+    ws.send(JSON.stringify({
+        type: 'connection-established',
+        timestamp: Date.now()
+    }));
     
     ws.on('message', (message) => {
         try {
             const data = JSON.parse(message);
-            console.log('Received:', data);
+            console.log('Received message:', data.type, 'from user:', data.user_id);
             
             // Store user connection
             if (data.type === 'auth' && data.user_id) {
                 clients.set(data.user_id, ws);
                 ws.user_id = data.user_id;
+                console.log(`User ${data.user_id} authenticated`);
+                
+                // Send auth confirmation
+                ws.send(JSON.stringify({
+                    type: 'auth-success',
+                    user_id: data.user_id,
+                    timestamp: Date.now()
+                }));
             }
             
             // Handle call signaling
@@ -63,7 +77,7 @@ wss.on('connection', (ws, req) => {
             } else {
                 // Broadcast to all connected clients except sender
                 wss.clients.forEach((client) => {
-                    if (client !== ws && client.readyState === WebSocket.OPEN) {
+                    if (client !== ws && client.readyState === 1) { // 1 = OPEN
                         client.send(JSON.stringify(data));
                     }
                 });
@@ -87,28 +101,38 @@ wss.on('connection', (ws, req) => {
 
 // Call signaling handlers
 function handleCallInvitation(data, senderWs) {
-    const { callId, participants, callType } = data;
+    const { callId, participants, callType, from } = data;
+    
+    console.log(`Handling call invitation: ${callId}, type: ${callType}, participants:`, participants?.length || 0);
     
     // Store call session
     activeCalls.set(callId, {
-        participants: participants.map(p => p.id),
+        participants: participants ? participants.map(p => p.id || p.user_id) : [],
         callType,
-        status: 'ringing'
+        status: 'ringing',
+        caller: from
     });
     
     // Send invitation to participants
-    participants.forEach(participant => {
-        const participantWs = clients.get(participant.id);
-        if (participantWs && participantWs.readyState === WebSocket.OPEN) {
-            participantWs.send(JSON.stringify({
-                type: 'call-invitation',
-                callId,
-                caller: data.from,
-                callType,
-                timestamp: Date.now()
-            }));
-        }
-    });
+    if (participants && participants.length > 0) {
+        participants.forEach(participant => {
+            const participantId = participant.id || participant.user_id;
+            const participantWs = clients.get(participantId);
+            
+            console.log(`Sending invitation to user ${participantId}, connected:`, !!participantWs);
+            
+            if (participantWs && participantWs.readyState === 1) { // 1 = OPEN
+                participantWs.send(JSON.stringify({
+                    type: 'call-invitation',
+                    callId,
+                    caller: from,
+                    callerName: data.callerName || 'Unknown',
+                    callType,
+                    timestamp: Date.now()
+                }));
+            }
+        });
+    }
 }
 
 function handleCallResponse(data, senderWs) {
@@ -120,7 +144,7 @@ function handleCallResponse(data, senderWs) {
     // Notify all participants about the response
     call.participants.forEach(participantId => {
         const participantWs = clients.get(participantId);
-        if (participantWs && participantWs.readyState === WebSocket.OPEN) {
+        if (participantWs && participantWs.readyState === 1) { // 1 = OPEN
             participantWs.send(JSON.stringify({
                 type: 'call-response',
                 callId,
@@ -143,7 +167,7 @@ function handleWebRTCSignal(data, senderWs) {
     const { callId, targetUserId, signal } = data;
     
     const targetWs = clients.get(targetUserId);
-    if (targetWs && targetWs.readyState === WebSocket.OPEN) {
+    if (targetWs && targetWs.readyState === 1) { // 1 = OPEN
         targetWs.send(JSON.stringify({
             type: 'webrtc-signal',
             callId,

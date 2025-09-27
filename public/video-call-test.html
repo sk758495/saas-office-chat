@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="test-token">
+    <meta name="user-id" content="1">
+    <title>Video Call Test</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/video-call.css">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+    <h1>Video Call System Test</h1>
+    
+    <div class="test-section">
+        <h2>1. WebSocket Connection Test</h2>
+        <div id="websocket-status" class="status info">Testing WebSocket connection...</div>
+        <button onclick="testWebSocket()" class="btn-primary">Test WebSocket</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Media Permissions Test</h2>
+        <div id="media-status" class="status info">Click to test camera/microphone access</div>
+        <button onclick="testMediaPermissions()" class="btn-primary">Test Camera & Microphone</button>
+        <video id="test-video" autoplay muted style="width: 300px; height: 200px; background: #000; margin: 10px 0;"></video>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Video Call Manager Test</h2>
+        <div id="manager-status" class="status info">Testing video call manager initialization...</div>
+        <button onclick="testCallManager()" class="btn-primary">Test Call Manager</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Simulate Call Test</h2>
+        <div id="call-status" class="status info">Ready to test call functionality</div>
+        <button onclick="simulateCall('video')" class="btn-success">Test Video Call</button>
+        <button onclick="simulateCall('audio')" class="btn-success">Test Audio Call</button>
+        <button onclick="simulateIncomingCall()" class="btn-danger">Simulate Incoming Call</button>
+    </div>
+
+    <script src="js/video-call.js"></script>
+    <script>
+        let testResults = {
+            websocket: false,
+            media: false,
+            manager: false
+        };
+
+        // Test WebSocket connection
+        function testWebSocket() {
+            const status = document.getElementById('websocket-status');
+            status.className = 'status info';
+            status.textContent = 'Testing WebSocket connection...';
+            
+            try {
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsHost = window.location.hostname;
+                const wsPort = '6001';
+                const testSocket = new WebSocket(`${wsProtocol}//${wsHost}:${wsPort}/ws`);
+                
+                testSocket.onopen = () => {
+                    status.className = 'status success';
+                    status.textContent = '✓ WebSocket connection successful';
+                    testResults.websocket = true;
+                    testSocket.close();
+                };
+                
+                testSocket.onerror = (error) => {
+                    status.className = 'status error';
+                    status.textContent = '✗ WebSocket connection failed. Make sure the WebSocket server is running on port 6001';
+                    testResults.websocket = false;
+                };
+                
+                testSocket.onclose = () => {
+                    if (!testResults.websocket) {
+                        status.className = 'status error';
+                        status.textContent = '✗ WebSocket connection closed unexpectedly';
+                    }
+                };
+                
+                // Timeout after 5 seconds
+                setTimeout(() => {
+                    if (testSocket.readyState === WebSocket.CONNECTING) {
+                        testSocket.close();
+                        status.className = 'status error';
+                        status.textContent = '✗ WebSocket connection timeout';
+                    }
+                }, 5000);
+                
+            } catch (error) {
+                status.className = 'status error';
+                status.textContent = '✗ WebSocket test failed: ' + error.message;
+            }
+        }
+
+        // Test media permissions
+        async function testMediaPermissions() {
+            const status = document.getElementById('media-status');
+            const video = document.getElementById('test-video');
+            
+            status.className = 'status info';
+            status.textContent = 'Requesting camera and microphone access...';
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: true
+                });
+                
+                video.srcObject = stream;
+                status.className = 'status success';
+                status.textContent = '✓ Camera and microphone access granted';
+                testResults.media = true;
+                
+                // Stop the stream after 5 seconds
+                setTimeout(() => {
+                    stream.getTracks().forEach(track => track.stop());
+                    video.srcObject = null;
+                }, 5000);
+                
+            } catch (error) {
+                status.className = 'status error';
+                if (error.name === 'NotAllowedError') {
+                    status.textContent = '✗ Camera/microphone access denied. Please allow permissions.';
+                } else if (error.name === 'NotFoundError') {
+                    status.textContent = '✗ No camera or microphone found.';
+                } else {
+                    status.textContent = '✗ Media access failed: ' + error.message;
+                }
+                testResults.media = false;
+            }
+        }
+
+        // Test call manager
+        function testCallManager() {
+            const status = document.getElementById('manager-status');
+            
+            try {
+                if (window.VideoCallManager) {
+                    status.className = 'status success';
+                    status.textContent = '✓ VideoCallManager class is available';
+                    testResults.manager = true;
+                } else {
+                    status.className = 'status error';
+                    status.textContent = '✗ VideoCallManager class not found';
+                    testResults.manager = false;
+                }
+            } catch (error) {
+                status.className = 'status error';
+                status.textContent = '✗ Call manager test failed: ' + error.message;
+                testResults.manager = false;
+            }
+        }
+
+        // Simulate call
+        function simulateCall(callType) {
+            const status = document.getElementById('call-status');
+            
+            if (!testResults.websocket || !testResults.media || !testResults.manager) {
+                status.className = 'status error';
+                status.textContent = '✗ Please run and pass all previous tests first';
+                return;
+            }
+            
+            status.className = 'status info';
+            status.textContent = `Simulating ${callType} call...`;
+            
+            try {
+                // This would normally call the API, but for testing we'll just show the interface
+                if (window.videoCallManager) {
+                    // Simulate successful call creation
+                    window.videoCallManager.currentCall = {
+                        id: 'test-call-123',
+                        call_type: callType,
+                        call_id: 'test-uuid-123'
+                    };
+                    
+                    window.videoCallManager.showCallInterface();
+                    status.className = 'status success';
+                    status.textContent = `✓ ${callType} call interface displayed`;
+                } else {
+                    throw new Error('VideoCallManager not initialized');
+                }
+            } catch (error) {
+                status.className = 'status error';
+                status.textContent = '✗ Call simulation failed: ' + error.message;
+            }
+        }
+
+        // Simulate incoming call
+        function simulateIncomingCall() {
+            const status = document.getElementById('call-status');
+            
+            try {
+                if (window.videoCallManager) {
+                    window.videoCallManager.handleCallInvitation({
+                        callId: 'incoming-test-123',
+                        callType: 'video',
+                        callerName: 'Test User',
+                        caller: 2
+                    });
+                    
+                    status.className = 'status success';
+                    status.textContent = '✓ Incoming call invitation displayed';
+                } else {
+                    throw new Error('VideoCallManager not initialized');
+                }
+            } catch (error) {
+                status.className = 'status error';
+                status.textContent = '✗ Incoming call simulation failed: ' + error.message;
+            }
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testWebSocket();
+                testCallManager();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -128,6 +128,20 @@ Route::options('/ws/broadcast', function() {
 
 
 
+// Video Calling Routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/calls/initiate', [App\Http\Controllers\CallController::class, 'initiateCall']);
+    Route::post('/calls/{call}/join', [App\Http\Controllers\CallController::class, 'joinCall']);
+    Route::post('/calls/{call}/leave', [App\Http\Controllers\CallController::class, 'leaveCall']);
+    Route::post('/calls/{call}/decline', [App\Http\Controllers\CallController::class, 'declineCall']);
+    Route::post('/calls/{call}/start-recording', [App\Http\Controllers\CallController::class, 'startRecording']);
+    Route::post('/recordings/{recording}/stop', [App\Http\Controllers\CallController::class, 'stopRecording']);
+    Route::post('/recordings/{recording}/upload', [App\Http\Controllers\CallController::class, 'uploadRecording']);
+    Route::get('/calls/history', [App\Http\Controllers\CallController::class, 'getCallHistory']);
+    Route::get('/calls/{call}/recordings', [App\Http\Controllers\CallController::class, 'getCallRecordings']);
+    Route::get('/recordings/{recording}/download', [App\Http\Controllers\CallController::class, 'downloadRecording']);
+});
+
 // Test route to debug authentication
 Route::middleware('auth:sanctum')->get('/test-auth', function (Request $request) {
     return response()->json([

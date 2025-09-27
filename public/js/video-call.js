@@ -35,15 +35,32 @@ class VideoCallManager {
 
     initializeSocket() {
         // Initialize WebSocket connection for signaling
-        this.socket = new WebSocket(`ws://localhost:6001/ws`);
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsHost = window.location.hostname;
+        const wsPort = '6001';
+        this.socket = new WebSocket(`${wsProtocol}//${wsHost}:${wsPort}/ws`);
         
         this.socket.onopen = () => {
             console.log('WebSocket connected for video calls');
+            // Authenticate the WebSocket connection
+            this.sendSignalingMessage({
+                type: 'auth',
+                user_id: this.getCurrentUserId()
+            });
         };
 
         this.socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
             this.handleSignalingMessage(data);
+        };
+        
+        this.socket.onclose = () => {
+            console.log('WebSocket disconnected, attempting to reconnect...');
+            setTimeout(() => this.initializeSocket(), 3000);
+        };
+        
+        this.socket.onerror = (error) => {
+            console.error('WebSocket error:', error);
         };
     }
 
@@ -70,15 +87,22 @@ class VideoCallManager {
             
             // Create call via API
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const token = localStorage.getItem('auth_token') || document.querySelector('meta[name="api-token"]')?.getAttribute('content');
+            
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            };
+            
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
             
             const response = await fetch('/api/calls/initiate', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                },
+                headers: headers,
                 credentials: 'same-origin',
                 body: JSON.stringify({
                     type: type,
@@ -445,10 +469,71 @@ class VideoCallManager {
     }
 
     handleCallInvitation(data) {
-        if (confirm(`Incoming ${data.callType} call. Accept?`)) {
+        this.showCallInvitation(data);
+    }
+    
+    showCallInvitation(data) {
+        // Create call invitation modal
+        const modal = document.createElement('div');
+        modal.id = 'call-invitation-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+        
+        modal.innerHTML = `
+            <div style="background: white; border-radius: 12px; padding: 24px; max-width: 320px; margin: 16px; text-align: center;">
+                <div style="margin-bottom: 16px;">
+                    <i class="fas fa-${data.callType === 'video' ? 'video' : 'phone'}" style="font-size: 48px; color: #3b82f6; margin-bottom: 8px;"></i>
+                    <h3 style="font-size: 18px; font-weight: 600; margin: 8px 0;">Incoming ${data.callType} call</h3>
+                    <p style="color: #6b7280;">From: ${data.callerName || 'Unknown'}</p>
+                </div>
+                <div style="display: flex; gap: 16px; justify-content: center;">
+                    <button id="accept-call" style="background: #10b981; color: white; padding: 8px 24px; border-radius: 24px; border: none; cursor: pointer;">
+                        <i class="fas fa-phone"></i> Accept
+                    </button>
+                    <button id="decline-call" style="background: #ef4444; color: white; padding: 8px 24px; border-radius: 24px; border: none; cursor: pointer;">
+                        <i class="fas fa-phone-slash"></i> Decline
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Handle accept
+        document.getElementById('accept-call').addEventListener('click', () => {
             this.currentCall = { id: data.callId, call_type: data.callType };
             this.joinCall(data.callId);
-        }
+            modal.remove();
+        });
+        
+        // Handle decline
+        document.getElementById('decline-call').addEventListener('click', () => {
+            this.sendSignalingMessage({
+                type: 'call-response',
+                callId: data.callId,
+                response: 'decline',
+                userId: this.getCurrentUserId()
+            });
+            modal.remove();
+        });
+        
+        // Auto-decline after 30 seconds
+        setTimeout(() => {
+            if (document.getElementById('call-invitation-modal')) {
+                modal.remove();
+            }
+        }, 30000);
     }
 
     handleCallJoined(data) {
@@ -468,7 +553,12 @@ class VideoCallManager {
     }
 
     getCurrentUserId() {
-        // Get current user ID from your auth system
+        // Get current user ID from Laravel auth
+        const userMeta = document.querySelector('meta[name="user-id"]');
+        if (userMeta) {
+            return parseInt(userMeta.getAttribute('content'));
+        }
+        // Fallback - try to get from global variable
         return window.currentUserId || 1;
     }
 
