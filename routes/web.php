@@ -86,7 +86,8 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('/dashboard', function () {
         return redirect()->route('company.dashboard');
     })->name('dashboard');
-    Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->only(['index', 'create', 'store']);
+    Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
+    Route::post('users/{user}/toggle-status', [\App\Http\Controllers\Admin\UserController::class, 'toggleStatus'])->name('users.toggle-status');
     Route::resource('departments', DepartmentController::class);
     Route::resource('designations', DesignationController::class);
     Route::get('/chat-monitor', [\App\Http\Controllers\Admin\ChatMonitorController::class, 'index'])->name('chat-monitor');

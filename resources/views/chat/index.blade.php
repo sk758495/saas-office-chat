@@ -374,6 +374,36 @@
         .message-bubble.privacy-mode:hover {
             filter: blur(0px);
         }
+        
+        /* Drag and Drop Styles */
+        .drag-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(102, 126, 234, 0.1);
+            border: 3px dashed var(--chat-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(2px);
+        }
+        .drag-overlay-content {
+            text-align: center;
+            color: var(--chat-primary);
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        .drag-overlay-content i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+        .messages-container.drag-over {
+            background: rgba(102, 126, 234, 0.05);
+        }
         .privacy-toggle {
             background: rgba(255,255,255,0.2);
             border: 1px solid rgba(255,255,255,0.3);
@@ -1849,6 +1879,7 @@
             document.getElementById('folderPreview').classList.add('d-none');
             document.getElementById('fileInput').value = '';
             document.getElementById('folderInput').value = '';
+            window.droppedFiles = null;
         }
 
         // Mobile responsive functions
@@ -1906,6 +1937,233 @@
         
 
 
+        // Drag and Drop functionality
+        let dragCounter = 0;
+        
+        function initializeDragAndDrop() {
+            const messagesContainer = document.getElementById('messagesContainer');
+            const chatArea = document.querySelector('.chat-area');
+            
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                messagesContainer.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            // Highlight drop area when item is dragged over it
+            ['dragenter', 'dragover'].forEach(eventName => {
+                messagesContainer.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                messagesContainer.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight(e) {
+                if (!currentChatUserId && !currentGroupId) return;
+                
+                dragCounter++;
+                messagesContainer.classList.add('drag-over');
+                
+                if (!document.querySelector('.drag-overlay')) {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'drag-overlay';
+                    overlay.innerHTML = `
+                        <div class="drag-overlay-content">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <div>Drop files here to send</div>
+                            <small>Images, documents, and folders supported</small>
+                        </div>
+                    `;
+                    chatArea.style.position = 'relative';
+                    chatArea.appendChild(overlay);
+                }
+            }
+            
+            function unhighlight(e) {
+                if (!currentChatUserId && !currentGroupId) return;
+                
+                dragCounter--;
+                if (dragCounter === 0) {
+                    messagesContainer.classList.remove('drag-over');
+                    const overlay = document.querySelector('.drag-overlay');
+                    if (overlay) {
+                        overlay.remove();
+                    }
+                }
+            }
+            
+            // Handle dropped files
+            messagesContainer.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                if (!currentChatUserId && !currentGroupId) return;
+                
+                dragCounter = 0;
+                messagesContainer.classList.remove('drag-over');
+                const overlay = document.querySelector('.drag-overlay');
+                if (overlay) overlay.remove();
+                
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    handleDroppedFiles(files);
+                }
+            }
+        }
+        
+        function handleDroppedFiles(files) {
+            const fileArray = Array.from(files);
+            
+            if (fileArray.length === 1) {
+                // Single file - use existing file input
+                const file = fileArray[0];
+                const fileInput = document.getElementById('fileInput');
+                
+                // Create a new FileList-like object
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                fileInput.files = dt.files;
+                
+                // Trigger change event to show preview
+                fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+            } else {
+                // Multiple files - treat as folder
+                handleMultipleFiles(fileArray);
+            }
+        }
+        
+        function handleMultipleFiles(files) {
+            // Show folder preview for multiple files
+            const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+            const sizeText = formatFileSize(totalSize);
+            
+            document.getElementById('folderName').textContent = `Dropped Files (${files.length})`;
+            document.getElementById('folderDetails').textContent = `${files.length} files • ${sizeText}`;
+            
+            document.getElementById('folderPreview').classList.remove('d-none');
+            document.getElementById('imagePreview').classList.add('d-none');
+            document.getElementById('documentPreview').classList.add('d-none');
+            document.getElementById('filePreview').classList.remove('d-none');
+            
+            // Store files for sending
+            window.droppedFiles = files;
+        }
+        
+        // Update message form submission to handle dropped files
+        const originalFormSubmit = document.getElementById('messageForm').onsubmit;
+        document.getElementById('messageForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const messageText = document.getElementById('messageText').value;
+            const fileInput = document.getElementById('fileInput');
+            const folderInput = document.getElementById('folderInput');
+            const sendBtn = document.querySelector('#messageForm .btn-primary');
+            
+            if (!messageText.trim() && !fileInput.files[0] && !folderInput.files.length && !window.droppedFiles) return;
+            
+            // Show loader
+            const originalContent = sendBtn.innerHTML;
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            sendBtn.disabled = true;
+            
+            const formData = new FormData();
+            
+            if (currentGroupId) {
+                formData.append('group_id', currentGroupId);
+                var sendUrl = '/groups/send-message';
+            } else {
+                formData.append('receiver_id', currentChatUserId);
+                var sendUrl = '/chat/send';
+            }
+            
+            if (messageText.trim()) formData.append('message', messageText.trim());
+            
+            // Handle dropped files
+            if (window.droppedFiles && window.droppedFiles.length > 0) {
+                window.droppedFiles.forEach((file, index) => {
+                    formData.append(`folder_files[${index}]`, file);
+                });
+                formData.append('folder_name', `Dropped Files (${window.droppedFiles.length})`);
+            }
+            // Handle folder upload
+            else if (folderInput.files.length > 0) {
+                Array.from(folderInput.files).forEach((file, index) => {
+                    formData.append(`folder_files[${index}]`, file);
+                });
+                formData.append('folder_name', folderInput.files[0].webkitRelativePath.split('/')[0]);
+            }
+            // Handle single file upload
+            else if (fileInput.files[0]) {
+                formData.append('file', fileInput.files[0]);
+            }
+            
+            fetch(sendUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        console.error('Server response:', text);
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    });
+                }
+                return response.text().then(text => {
+                    console.log('Server response:', text);
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('Invalid JSON response:', text);
+                        throw new Error('Server returned invalid response');
+                    }
+                });
+            })
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('messageText').value = '';
+                    fileInput.value = '';
+                    folderInput.value = '';
+                    window.droppedFiles = null;
+                    removePreview();
+                    
+                    // Add new message to current chat without refreshing
+                    if (currentChatUserId) {
+                        addMessageToChat(data.message);
+                        moveChatToTop(currentChatUserId, false);
+                    } else if (currentGroupId) {
+                        addMessageToChat(data.message);
+                        moveChatToTop(currentGroupId, true);
+                    }
+                    
+                    // Update unread counts for other users
+                    updateUnreadCounts();
+                    updateGroupUnreadCounts();
+                } else {
+                    console.error('Server error:', data);
+                    alert('Error: ' + (data.error || data.message || 'Upload failed'));
+                }
+            })
+            .catch(error => {
+                console.error('Upload error:', error);
+                alert('Upload failed: ' + error.message);
+            })
+            .finally(() => {
+                // Reset button
+                sendBtn.innerHTML = originalContent;
+                sendBtn.disabled = false;
+            });
+        });
+
         // Initialize button states
         document.addEventListener('DOMContentLoaded', function() {
             const soundBtn = document.getElementById('soundToggle');
@@ -1920,6 +2178,9 @@
                 privacyBtn.innerHTML = privacyMode ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
                 privacyBtn.title = privacyMode ? 'Disable Privacy Mode' : 'Enable Privacy Mode';
             }
+            
+            // Initialize drag and drop
+            initializeDragAndDrop();
         });
 
         // Group photo upload
