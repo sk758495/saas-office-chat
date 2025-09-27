@@ -64,6 +64,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'chat_pin' => 'string',
             'is_online' => 'boolean',
             'is_active' => 'boolean',
             'last_seen' => 'datetime',

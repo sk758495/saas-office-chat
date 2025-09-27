@@ -516,7 +516,12 @@
                     'Content-Type': 'application/json'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => Promise.reject(err));
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     new bootstrap.Modal(document.getElementById('emailVerificationModal')).show();
@@ -526,7 +531,8 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred');
+                const errorMessage = error.error || error.message || 'An error occurred while sending verification email. Please try again.';
+                alert(errorMessage);
             })
             .finally(() => {
                 hideButtonLoader(btn);
@@ -545,7 +551,12 @@
                     'Content-Type': 'application/json'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => Promise.reject(err));
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     document.getElementById('emailVerificationModal').setAttribute('data-next-action', 'password');
@@ -556,7 +567,8 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred');
+                const errorMessage = error.error || error.message || 'An error occurred while sending verification email. Please try again.';
+                alert(errorMessage);
             })
             .finally(() => {
                 hideButtonLoader(btn);
@@ -621,7 +633,12 @@
                 },
                 body: JSON.stringify({ email })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => Promise.reject(err));
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     new bootstrap.Modal(document.getElementById('newEmailVerificationModal')).show();
@@ -631,7 +648,8 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred while updating email');
+                const errorMessage = error.error || error.message || 'An error occurred while updating email. Please try again.';
+                alert(errorMessage);
             });
         }
 
@@ -702,7 +720,12 @@
                     password_confirmation: confirmPassword
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => Promise.reject(err));
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     alert(data.message);
@@ -714,7 +737,8 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred while updating password');
+                const errorMessage = error.error || error.message || 'An error occurred while updating password. Please try again.';
+                alert(errorMessage);
             })
             .finally(() => {
                 hideButtonLoader(submitBtn);

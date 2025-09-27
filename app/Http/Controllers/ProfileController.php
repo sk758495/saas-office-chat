@@ -205,19 +205,24 @@ class ProfileController extends Controller
 
     public function sendCurrentEmailVerification(Request $request)
     {
-        $user = Auth::user();
-        $otp = str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT);
-        
-        $user->update([
-            'email_verification_token' => $otp,
-            'email_verification_expires_at' => now()->addMinutes(10)
-        ]);
-        
-        Mail::raw("Your verification OTP: {$otp}\nThis OTP will expire in 10 minutes.", function($message) use ($user) {
-            $message->to($user->email)->subject('Email Verification - Office Chat');
-        });
-        
-        return response()->json(['success' => true, 'message' => 'Verification OTP sent to your current email']);
+        try {
+            $user = Auth::user();
+            $otp = str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT);
+            
+            $user->update([
+                'email_verification_token' => $otp,
+                'email_verification_expires_at' => now()->addMinutes(10)
+            ]);
+            
+            Mail::raw("Your verification OTP: {$otp}\nThis OTP will expire in 10 minutes.", function($message) use ($user) {
+                $message->to($user->email)->subject('Email Verification - Office Chat');
+            });
+            
+            return response()->json(['success' => true, 'message' => 'Verification OTP sent to your current email']);
+        } catch (\Exception $e) {
+            \Log::error('Email verification error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to send verification email. Please try again.'], 500);
+        }
     }
 
     public function verifyCurrentEmail(Request $request)
@@ -244,34 +249,39 @@ class ProfileController extends Controller
 
     public function updateEmail(Request $request)
     {
-        if (!session('current_email_verified') || session('verified_user_id') != Auth::id()) {
-            return response()->json(['error' => 'Please verify your current email first'], 400);
-        }
-        
-        $data = $request->json()->all();
-        
-        $validator = Validator::make($data, [
-            'email' => 'required|email|unique:users,email,' . Auth::id()
-        ]);
-        
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()->first()], 400);
-        }
+        try {
+            if (!session('current_email_verified') || session('verified_user_id') != Auth::id()) {
+                return response()->json(['error' => 'Please verify your current email first'], 400);
+            }
+            
+            $data = $request->json()->all();
+            
+            $validator = Validator::make($data, [
+                'email' => 'required|email|unique:users,email,' . Auth::id()
+            ]);
+            
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()->first()], 400);
+            }
 
-        $user = Auth::user();
-        $otp = str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT);
-        
-        session([
-            'new_email' => $data['email'],
-            'new_email_otp' => $otp,
-            'new_email_expires_at' => now()->addMinutes(10)
-        ]);
-        
-        Mail::raw("Your new email verification OTP: {$otp}\nThis OTP will expire in 10 minutes.", function($message) use ($data) {
-            $message->to($data['email'])->subject('New Email Verification - Office Chat');
-        });
-        
-        return response()->json(['success' => true, 'message' => 'Verification OTP sent to your new email']);
+            $user = Auth::user();
+            $otp = str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT);
+            
+            session([
+                'new_email' => $data['email'],
+                'new_email_otp' => $otp,
+                'new_email_expires_at' => now()->addMinutes(10)
+            ]);
+            
+            Mail::raw("Your new email verification OTP: {$otp}\nThis OTP will expire in 10 minutes.", function($message) use ($data) {
+                $message->to($data['email'])->subject('New Email Verification - Office Chat');
+            });
+            
+            return response()->json(['success' => true, 'message' => 'Verification OTP sent to your new email']);
+        } catch (\Exception $e) {
+            \Log::error('Email update error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to update email. Please try again.'], 500);
+        }
     }
 
     public function verifyNewEmail(Request $request)
@@ -298,30 +308,35 @@ class ProfileController extends Controller
 
     public function updatePassword(Request $request)
     {
-        if (!session('current_email_verified') || session('verified_user_id') != Auth::id()) {
-            return response()->json(['error' => 'Please verify your email first'], 400);
-        }
-        
-        $data = $request->json()->all();
-        
-        $validator = Validator::make($data, [
-            'current_password' => 'required',
-            'password' => 'required|min:8',
-            'password_confirmation' => 'required|same:password'
-        ]);
-        
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()->first()], 400);
-        }
+        try {
+            if (!session('current_email_verified') || session('verified_user_id') != Auth::id()) {
+                return response()->json(['error' => 'Please verify your email first'], 400);
+            }
+            
+            $data = $request->json()->all();
+            
+            $validator = Validator::make($data, [
+                'current_password' => 'required',
+                'password' => 'required|min:8',
+                'password_confirmation' => 'required|same:password'
+            ]);
+            
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()->first()], 400);
+            }
 
-        $user = Auth::user();
-        
-        if (!Hash::check($data['current_password'], $user->password)) {
-            return response()->json(['error' => 'Current password is incorrect'], 400);
-        }
+            $user = Auth::user();
+            
+            if (!Hash::check($data['current_password'], $user->password)) {
+                return response()->json(['error' => 'Current password is incorrect'], 400);
+            }
 
-        $user->update(['password' => Hash::make($data['password'])]);
-        session()->forget(['current_email_verified', 'verified_user_id']);
-        return response()->json(['success' => true, 'message' => 'Password updated successfully!']);
+            $user->update(['password' => Hash::make($data['password'])]);
+            session()->forget(['current_email_verified', 'verified_user_id']);
+            return response()->json(['success' => true, 'message' => 'Password updated successfully!']);
+        } catch (\Exception $e) {
+            \Log::error('Password update error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to update password. Please try again.'], 500);
+        }
     }
 }
