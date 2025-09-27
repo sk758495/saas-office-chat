@@ -8,7 +8,6 @@ use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\WebSocketController;
-use App\Http\Controllers\CallController;
 
 // Public Routes with CORS
 Route::post('/register', [AuthController::class, 'register']);
@@ -70,17 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/verify-new-email', [ProfileController::class, 'verifyNewEmail']);
     Route::post('/profile/password', [ProfileController::class, 'updatePassword']);
     
-    // Call Routes
-    Route::post('/calls/initiate', [CallController::class, 'initiateCall']);
-    Route::post('/calls/{call}/join', [CallController::class, 'joinCall']);
-    Route::post('/calls/{call}/leave', [CallController::class, 'leaveCall']);
-    Route::post('/calls/{call}/decline', [CallController::class, 'declineCall']);
-    Route::post('/calls/{call}/start-recording', [CallController::class, 'startRecording']);
-    Route::post('/recordings/{recording}/stop', [CallController::class, 'stopRecording']);
-    Route::post('/recordings/{recording}/upload', [CallController::class, 'uploadRecording']);
-    Route::get('/calls/history', [CallController::class, 'getCallHistory']);
-    Route::get('/calls/{call}/recordings', [CallController::class, 'getCallRecordings']);
-    Route::get('/recordings/{recording}/download', [CallController::class, 'downloadRecording']);
+
 });
 
 // Admin Routes (Protected by admin middleware)

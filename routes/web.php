@@ -66,6 +66,18 @@ Route::middleware(['auth', 'verified', 'company.access'])->group(function () {
     Route::get('/api/unread-counts', [ChatController::class, 'getUnreadCounts']);
     Route::get('/api/group-unread-counts', [ChatController::class, 'getGroupUnreadCounts']);
     Route::get('/api/users', [ChatController::class, 'getUsers']);
+    
+    // Call Routes
+    Route::post('/api/calls/initiate', [\App\Http\Controllers\CallController::class, 'initiateCall']);
+    Route::post('/api/calls/{call}/join', [\App\Http\Controllers\CallController::class, 'joinCall']);
+    Route::post('/api/calls/{call}/leave', [\App\Http\Controllers\CallController::class, 'leaveCall']);
+    Route::post('/api/calls/{call}/decline', [\App\Http\Controllers\CallController::class, 'declineCall']);
+    Route::post('/api/calls/{call}/start-recording', [\App\Http\Controllers\CallController::class, 'startRecording']);
+    Route::post('/api/recordings/{recording}/stop', [\App\Http\Controllers\CallController::class, 'stopRecording']);
+    Route::post('/api/recordings/{recording}/upload', [\App\Http\Controllers\CallController::class, 'uploadRecording']);
+    Route::get('/api/calls/history', [\App\Http\Controllers\CallController::class, 'getCallHistory']);
+    Route::get('/api/calls/{call}/recordings', [\App\Http\Controllers\CallController::class, 'getCallRecordings']);
+    Route::get('/api/recordings/{recording}/download', [\App\Http\Controllers\CallController::class, 'downloadRecording']);
 });
 
 // API Routes for AJAX

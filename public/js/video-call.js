@@ -70,11 +70,14 @@ class VideoCallManager {
             }
             
             // Create call via API
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            
             const response = await fetch('/api/calls/initiate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify({
                     type: type,
@@ -84,6 +87,12 @@ class VideoCallManager {
                 })
             });
 
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('API Error Response:', errorText);
+                throw new Error(`API Error: ${response.status} ${response.statusText}`);
+            }
+            
             const result = await response.json();
             if (result.success) {
                 this.currentCall = result.call;
@@ -130,10 +139,13 @@ class VideoCallManager {
             this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
             
             // Join call via API
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            
             const response = await fetch(`/api/calls/${this.currentCall.id}/join`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
                 }
             });
 
@@ -157,10 +169,13 @@ class VideoCallManager {
     async leaveCall() {
         try {
             if (this.currentCall) {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                
                 await fetch(`/api/calls/${this.currentCall.id}/leave`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
                     }
                 });
             }
@@ -202,10 +217,13 @@ class VideoCallManager {
             };
 
             // Start recording via API
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            
             const response = await fetch(`/api/calls/${this.currentCall.id}/start-recording`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
                 }
             });
 
