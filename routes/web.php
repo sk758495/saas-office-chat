@@ -78,6 +78,7 @@ Route::middleware(['auth:admin'])->prefix('company')->name('company.')->group(fu
     Route::post('/settings', [\App\Http\Controllers\CompanyController::class, 'updateSettings'])->name('settings.update');
     Route::post('/upgrade', [\App\Http\Controllers\CompanyController::class, 'upgrade'])->name('upgrade');
     Route::post('/chat-theme', [\App\Http\Controllers\CompanyController::class, 'updateChatTheme'])->name('chat-theme.update');
+    Route::post('/password', [\App\Http\Controllers\CompanyController::class, 'updatePassword'])->name('password.update');
 });
 
 // Admin Routes

@@ -12,9 +12,13 @@ class Admin extends Authenticatable
 
     protected $guard = 'admin';
 
-    protected $fillable = ['name', 'email', 'mobile', 'password', 'company_id', 'role'];
+    protected $fillable = ['name', 'email', 'mobile', 'password', 'company_id', 'role', 'password_reset_otp', 'password_reset_expires_at'];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ['password', 'remember_token', 'password_reset_otp'];
+
+    protected $casts = [
+        'password_reset_expires_at' => 'datetime',
+    ];
 
     public function company()
     {

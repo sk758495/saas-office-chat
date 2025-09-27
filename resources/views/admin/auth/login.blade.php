@@ -88,7 +88,7 @@
                             <input type="checkbox" class="mr-2 rounded border-white border-opacity-30 bg-white bg-opacity-20 text-indigo-600 focus:ring-indigo-500">
                             Remember me
                         </label>
-                        <a href="#" class="text-sm text-white hover:text-indigo-200 transition-colors">
+                        <a href="{{ route('admin.forgot-password') }}" class="text-sm text-white hover:text-indigo-200 transition-colors">
                             Forgot password?
                         </a>
                     </div>
@@ -97,6 +97,16 @@
                         <i class="fas fa-sign-in-alt mr-2"></i>Sign In
                     </button>
                 </form>
+
+                <!-- Alternative Login Options -->
+                <div class="mt-6">
+                    <div class="text-center">
+                        <p class="text-indigo-100 text-sm mb-4">Or login with</p>
+                        <a href="{{ route('admin.login-otp') }}" class="w-full inline-flex justify-center items-center bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105">
+                            <i class="fas fa-mobile-alt mr-2"></i>Login with OTP
+                        </a>
+                    </div>
+                </div>
 
                 <!-- Divider -->
                 <div class="mt-8 pt-6 border-t border-white border-opacity-20">

@@ -17,16 +17,18 @@ class AdminOtpMail extends Mailable
      * Create a new message instance.
      */
     public $otp;
+    public $type;
 
-    public function __construct($otp)
+    public function __construct($otp, $type = 'Verification')
     {
         $this->otp = $otp;
+        $this->type = $type;
     }
 
     public function build()
     {               
-        return $this->subject('Admin OTP Verification')
+        return $this->subject('Admin OTP ' . $this->type)
             ->view('emails.admin-otp')
-            ->with(['otp' => $this->otp]);
+            ->with(['otp' => $this->otp, 'type' => $this->type]);
     }
 }
