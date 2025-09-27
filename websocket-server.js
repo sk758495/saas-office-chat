@@ -179,7 +179,7 @@ function handleWebRTCSignal(data, senderWs) {
 }
 
 server.listen(6001, '0.0.0.0', () => {
-    console.log('WebSocket server running on ws://office-chat.jashmainfosoft.com:6001/ws');
-    console.log('HTTP broadcast endpoint: http://office-chat.jashmainfosoft.com:6001/broadcast');
+    console.log('WebSocket server running on ws://emplora.jashmainfosoft.com:6001/ws');
+    console.log('HTTP broadcast endpoint: http://emplora.jashmainfosoft.com:6001/broadcast');
     console.log('Video calling signaling enabled');
 });
