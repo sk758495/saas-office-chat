@@ -1204,7 +1204,7 @@
                         content += `<div class="mt-2">${message.message}</div>`;
                     }
                 } else {
-                    content = message.message || 'Message';
+                    content = processMessageWithUrls(message.message || 'Message');
                 }
                 
                 // Read status for sent messages
@@ -1848,7 +1848,7 @@
                     content += `<div class="mt-2">${message.message}</div>`;
                 }
             } else {
-                content = message.message || 'Message';
+                content = processMessageWithUrls(message.message || 'Message');
             }
             
             const privacyClass = privacyMode ? ' privacy-mode' : '';
@@ -2326,6 +2326,58 @@
                 downloadFile(currentImageMessageId);
             }
         });
+        
+        // URL processing function
+        function processMessageWithUrls(message) {
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            return message.replace(urlRegex, function(url) {
+                const cleanUrl = url.replace(/[.,;!?]$/, '');
+                return `
+                    <div class="url-container mt-2 p-2 border rounded" style="background: rgba(0,0,0,0.05);">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="url-text text-truncate me-2" style="max-width: 200px;">
+                                <i class="fas fa-link me-1 text-primary"></i>
+                                <span class="text-primary">${cleanUrl}</span>
+                            </div>
+                            <div class="url-actions">
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="window.open('${cleanUrl}', '_blank')" title="Open in new tab">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('${cleanUrl}')" title="Copy URL">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        // Copy to clipboard function
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                const toast = document.createElement('div');
+                toast.className = 'position-fixed top-0 end-0 m-3 alert alert-success';
+                toast.style.zIndex = '9999';
+                toast.innerHTML = '<i class="fas fa-check me-2"></i>URL copied!';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
+            }).catch(function() {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                const toast = document.createElement('div');
+                toast.className = 'position-fixed top-0 end-0 m-3 alert alert-success';
+                toast.style.zIndex = '9999';
+                toast.innerHTML = '<i class="fas fa-check me-2"></i>URL copied!';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
+            });
+        }
         
 
     </script>
