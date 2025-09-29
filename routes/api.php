@@ -128,20 +128,7 @@ Route::options('/ws/broadcast', function() {
 
 
 
-// Video Calling Routes
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/calls/initiate', [App\Http\Controllers\CallController::class, 'initiateCall']);
-    Route::post('/calls/{call}/join', [App\Http\Controllers\CallController::class, 'joinCall']);
-    Route::post('/calls/{call}/leave', [App\Http\Controllers\CallController::class, 'leaveCall']);
-    Route::post('/calls/{call}/decline', [App\Http\Controllers\CallController::class, 'declineCall']);
-    Route::post('/calls/{call}/start-recording', [App\Http\Controllers\CallController::class, 'startRecording']);
-    Route::post('/recordings/{recording}/stop', [App\Http\Controllers\CallController::class, 'stopRecording']);
-    Route::post('/recordings/{recording}/upload', [App\Http\Controllers\CallController::class, 'uploadRecording']);
-    Route::get('/calls/history', [App\Http\Controllers\CallController::class, 'getCallHistory']);
-    Route::get('/calls/{call}/recordings', [App\Http\Controllers\CallController::class, 'getCallRecordings']);
-    Route::get('/recordings/{recording}/download', [App\Http\Controllers\CallController::class, 'downloadRecording']);
-    Route::get('/calls/pending-invitations', [App\Http\Controllers\CallController::class, 'getPendingInvitations']);
-});
+
 
 // Test route to debug authentication
 Route::middleware('auth:sanctum')->get('/test-auth', function (Request $request) {
@@ -163,30 +150,4 @@ Route::get('/test-basic', function () {
     ]);
 });
 
-// Test call initiation without full authentication (for testing only)
-Route::post('/test-call-initiate', function (Request $request) {
-    try {
-        // Create a test call record
-        $call = \App\Models\Call::create([
-            'call_id' => \Illuminate\Support\Str::uuid(),
-            'type' => $request->type ?? 'one_to_one',
-            'call_type' => $request->call_type ?? 'video',
-            'status' => 'initiated',
-            'caller_id' => 1, // Test user ID
-            'chat_id' => $request->chat_id,
-            'group_id' => $request->group_id,
-            'started_at' => now(),
-        ]);
-        
-        return response()->json([
-            'success' => true,
-            'call' => $call,
-            'message' => 'Test call created successfully'
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to create test call: ' . $e->getMessage()
-        ], 500);
-    }
-});
+

@@ -8,7 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="/css/emoji-picker.css" rel="stylesheet">
-    <link href="/css/video-call.css" rel="stylesheet">
+
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="user-id" content="{{ auth()->id() }}">
     <style>
@@ -612,15 +612,6 @@
                             <small class="text-muted" id="chatUserInfo"></small>
                         </div>
                         <div class="d-flex align-items-center gap-2">
-                            <!-- Video Call Buttons -->
-                            <div id="callButtons" class="d-flex gap-1" style="display: none;">
-                                <button class="btn btn-success btn-sm" onclick="startCall('audio')" title="Audio Call">
-                                    <i class="fas fa-phone"></i>
-                                </button>
-                                <button class="btn btn-primary btn-sm" onclick="startCall('video')" title="Video Call">
-                                    <i class="fas fa-video"></i>
-                                </button>
-                            </div>
                             <button class="btn btn-outline-primary btn-sm" id="addMemberBtn" onclick="showAddMemberModal()" style="display: none;">
                                 <i class="fas fa-user-plus"></i>
                             </button>
@@ -834,40 +825,13 @@
         </div>
     </div>
     
-    <!-- Call Permission Modal -->
-    <div class="modal fade" id="callPermissionModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-video me-2"></i>Start Call</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <div class="mb-3">
-                        <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
-                        <h6 id="permissionTitle">Camera & Microphone Access Required</h6>
-                        <p class="text-muted" id="permissionMessage">This will request access to your camera and microphone for video calling.</p>
-                    </div>
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Please allow permissions when prompted by your browser.</strong>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="startCallBtn">
-                        <i class="fas fa-phone me-1"></i>Start Call
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/notification-sound.js"></script>
     <script src="/js/notification-permission.js"></script>
     <script src="/js/emoji-simple.js"></script>
-    <script src="/js/video-call.js"></script>
+
     <script>
         let currentChatUserId = null;
         let currentChat = null;
@@ -1049,8 +1013,6 @@
             document.getElementById('chatUserName').textContent = user.name;
             document.getElementById('chatUserInfo').textContent = user.department?.name || 'No Department';
             
-            // Show call buttons for individual chats
-            document.getElementById('callButtons').style.display = 'flex';
             // Hide add member button for individual chats
             document.getElementById('addMemberBtn').style.display = 'none';
         }
@@ -1437,8 +1399,6 @@
             document.getElementById('chatUserName').textContent = group.name;
             document.getElementById('chatUserInfo').textContent = `${group.members.length} members`;
             
-            // Show call buttons for group chats
-            document.getElementById('callButtons').style.display = 'flex';
             // Show add member button for groups
             document.getElementById('addMemberBtn').style.display = 'block';
         }
@@ -2452,60 +2412,7 @@
             }
         });
         
-        // Video Call Functions
-        let videoCallManager = null;
-        
-        // Initialize video call manager
-        function initializeVideoCallManager() {
-            if (typeof VideoCallManager !== 'undefined') {
-                videoCallManager = new VideoCallManager();
-                window.videoCallManager = videoCallManager;
-            } else {
-                console.warn('VideoCallManager not loaded');
-            }
-        }
-        
-        // Global variable to store call type
-        let pendingCallType = null;
-        
-        // Start call function
-        async function startCall(callType) {
-            console.log('Starting call:', { callType, currentChatUserId, currentGroupId, currentChat });
-            
-            if (!window.videoCallManager) {
-                console.error('Video call manager not available');
-                alert('Video calling is not available. Please refresh the page.');
-                return;
-            }
-            
-            try {
-                if (currentGroupId) {
-                    console.log('Starting group call for group:', currentGroupId);
-                    await window.videoCallManager.initiateCall('group', currentGroupId, callType);
-                } else if (currentChatUserId && currentChat) {
-                    console.log('Starting one-to-one call for chat:', currentChat.id);
-                    await window.videoCallManager.initiateCall('one_to_one', currentChat.id, callType);
-                } else {
-                    throw new Error('Please select a user or group to call.');
-                }
-            } catch (error) {
-                console.error('Failed to start call:', error);
-                alert(error.message || 'Failed to start call. Please check your permissions and try again.');
-            }
-        }
-        
 
-        
-        // Initialize video call manager when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if HTTPS is required
-            if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-                console.warn('Video calling requires HTTPS in production. Some features may not work.');
-            }
-            
-            // Delay initialization to ensure all scripts are loaded
-            setTimeout(initializeVideoCallManager, 1000);
-        });
     </script>
 </body>
 </html>
