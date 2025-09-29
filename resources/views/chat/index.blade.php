@@ -285,9 +285,6 @@
             .empty-chat i {
                 font-size: 2.5rem;
             }
-            #header-desktop{
-                margin-top: 45px;
-            }
             .header-desktop{
                 margin-top: 45px;
             }
@@ -443,6 +440,9 @@
             .chat-area {
                 padding-top: 50px;
             }
+            #header-desktop {
+                display: none !important;
+            }
         }
     </style>
 </head>
@@ -453,9 +453,28 @@
             <i class="fas fa-bars"></i>
         </button>
         <span id="mobileTitle">Office Chat</span>
-        <button class="btn btn-light btn-sm" onclick="showCreateGroupModal()">
-            <i class="fas fa-users"></i>
-        </button>
+        <div class="dropdown">
+            <button class="btn btn-light btn-sm" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-ellipsis-v"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="#" onclick="showCreateGroupModal()"><i class="fas fa-users me-2"></i>Create Group</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" id="privacyToggleItemMobile" onclick="togglePrivacyMode()"><i class="fas fa-eye-slash me-2"></i>Privacy Mode</a></li>
+                <li><a class="dropdown-item" href="#" id="soundToggleItemMobile" onclick="toggleSound()"><i class="fas fa-volume-up me-2"></i>Sound</a></li>
+                <li><a class="dropdown-item" href="#" onclick="testNotificationPermission()"><i class="fas fa-bell me-2"></i>Test Notifications</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ route('profile.show') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
+                <li>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="dropdown-item text-danger">
+                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
     </div>
 
     <div class="container-fluid chat-container">
@@ -489,36 +508,27 @@
                                 <small>{{ auth()->user()->name }} • {{ auth()->user()->company && auth()->user()->company->isPaid() ? 'Premium' : 'Free Plan' }}</small>
                             </div>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <button class="btn btn-light btn-sm" onclick="showCreateGroupModal()">
-                                <i class="fas fa-users me-1"></i>
+                        <div class="dropdown">
+                            <button class="btn btn-light btn-sm" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v"></i>
                             </button>
-                            <button class="btn privacy-toggle btn-sm" id="privacyToggle" onclick="togglePrivacyMode()" title="Toggle Privacy Mode">
-                                <i class="fas fa-eye-slash"></i>
-                            </button>
-                            <button class="btn btn-light btn-sm" id="soundToggle" onclick="toggleSound()" title="Disable Sounds">
-                                <i class="fas fa-volume-up"></i>
-                            </button>
-                            <button class="btn btn-light btn-sm" onclick="testNotificationPermission()" title="Test Notifications">
-                                <i class="fas fa-bell"></i>
-                            </button>
-                            <div class="dropdown">
-                                <button class="btn btn-light btn-sm rounded-circle" data-bs-toggle="dropdown">
-                                    <i class="fas fa-user"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" href="{{ route('profile.show') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li>
-                                        <form method="POST" action="{{ route('logout') }}">
-                                            @csrf
-                                            <button type="submit" class="dropdown-item text-danger">
-                                                <i class="fas fa-sign-out-alt me-2"></i>Logout
-                                            </button>
-                                        </form>
-                                    </li>
-                                </ul>
-                            </div>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" onclick="showCreateGroupModal()"><i class="fas fa-users me-2"></i>Create Group</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" id="privacyToggleItem" onclick="togglePrivacyMode()"><i class="fas fa-eye-slash me-2"></i>Privacy Mode</a></li>
+                                <li><a class="dropdown-item" href="#" id="soundToggleItem" onclick="toggleSound()"><i class="fas fa-volume-up me-2"></i>Sound</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="testNotificationPermission()"><i class="fas fa-bell me-2"></i>Test Notifications</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ route('profile.show') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
+                                <li>
+                                    <form method="POST" action="{{ route('logout') }}">
+                                        @csrf
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -887,19 +897,22 @@
         function toggleSound() {
             soundEnabled = !soundEnabled;
             localStorage.setItem('soundEnabled', soundEnabled);
-            const soundBtn = document.getElementById('soundToggle');
-            soundBtn.innerHTML = soundEnabled ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>';
-            soundBtn.title = soundEnabled ? 'Disable Sounds' : 'Enable Sounds';
+            const soundItem = document.getElementById('soundToggleItem');
+            const soundItemMobile = document.getElementById('soundToggleItemMobile');
+            const soundText = soundEnabled ? '<i class="fas fa-volume-up me-2"></i>Sound: On' : '<i class="fas fa-volume-mute me-2"></i>Sound: Off';
+            if (soundItem) soundItem.innerHTML = soundText;
+            if (soundItemMobile) soundItemMobile.innerHTML = soundText;
         }
 
         // Toggle privacy mode function
         function togglePrivacyMode() {
             privacyMode = !privacyMode;
             localStorage.setItem('privacyMode', privacyMode);
-            const privacyBtn = document.getElementById('privacyToggle');
-            privacyBtn.classList.toggle('active', privacyMode);
-            privacyBtn.innerHTML = privacyMode ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
-            privacyBtn.title = privacyMode ? 'Disable Privacy Mode' : 'Enable Privacy Mode';
+            const privacyItem = document.getElementById('privacyToggleItem');
+            const privacyItemMobile = document.getElementById('privacyToggleItemMobile');
+            const privacyText = privacyMode ? '<i class="fas fa-eye me-2"></i>Privacy: On' : '<i class="fas fa-eye-slash me-2"></i>Privacy: Off';
+            if (privacyItem) privacyItem.innerHTML = privacyText;
+            if (privacyItemMobile) privacyItemMobile.innerHTML = privacyText;
             
             // Apply privacy mode to all current messages
             const messageBubbles = document.querySelectorAll('.message-bubble');
@@ -2073,18 +2086,18 @@
 
         // Initialize button states
         document.addEventListener('DOMContentLoaded', function() {
-            const soundBtn = document.getElementById('soundToggle');
-            if (soundBtn) {
-                soundBtn.innerHTML = soundEnabled ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>';
-                soundBtn.title = soundEnabled ? 'Disable Sounds' : 'Enable Sounds';
-            }
+            const soundText = soundEnabled ? '<i class="fas fa-volume-up me-2"></i>Sound: On' : '<i class="fas fa-volume-mute me-2"></i>Sound: Off';
+            const privacyText = privacyMode ? '<i class="fas fa-eye me-2"></i>Privacy: On' : '<i class="fas fa-eye-slash me-2"></i>Privacy: Off';
             
-            const privacyBtn = document.getElementById('privacyToggle');
-            if (privacyBtn) {
-                privacyBtn.classList.toggle('active', privacyMode);
-                privacyBtn.innerHTML = privacyMode ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
-                privacyBtn.title = privacyMode ? 'Disable Privacy Mode' : 'Enable Privacy Mode';
-            }
+            const soundItem = document.getElementById('soundToggleItem');
+            const soundItemMobile = document.getElementById('soundToggleItemMobile');
+            if (soundItem) soundItem.innerHTML = soundText;
+            if (soundItemMobile) soundItemMobile.innerHTML = soundText;
+            
+            const privacyItem = document.getElementById('privacyToggleItem');
+            const privacyItemMobile = document.getElementById('privacyToggleItemMobile');
+            if (privacyItem) privacyItem.innerHTML = privacyText;
+            if (privacyItemMobile) privacyItemMobile.innerHTML = privacyText;
             
             // Initialize drag and drop
             initializeDragAndDrop();
