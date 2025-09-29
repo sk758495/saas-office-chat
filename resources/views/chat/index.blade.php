@@ -1259,15 +1259,22 @@
             
             if (messageText.trim()) formData.append('message', messageText.trim());
             
+            // Handle dropped files
+            if (window.droppedFiles && window.droppedFiles.length > 0) {
+                window.droppedFiles.forEach((file, index) => {
+                    formData.append(`folder_files[${index}]`, file);
+                });
+                formData.append('folder_name', `Dropped Files (${window.droppedFiles.length})`);
+            }
             // Handle folder upload
-            if (folderInput.files.length > 0) {
+            else if (folderInput.files.length > 0) {
                 Array.from(folderInput.files).forEach((file, index) => {
                     formData.append(`folder_files[${index}]`, file);
                 });
                 formData.append('folder_name', folderInput.files[0].webkitRelativePath.split('/')[0]);
             }
             // Handle single file upload (including ZIP)
-            if (fileInput.files[0]) {
+            else if (fileInput.files[0]) {
                 formData.append('file', fileInput.files[0]);
             }
             
@@ -1300,6 +1307,7 @@
                     document.getElementById('messageText').value = '';
                     fileInput.value = '';
                     folderInput.value = '';
+                    window.droppedFiles = null;
                     removePreview();
                     
                     // Add new message to current chat without refreshing
@@ -2061,113 +2069,7 @@
             window.droppedFiles = files;
         }
         
-        // Update message form submission to handle dropped files
-        const originalFormSubmit = document.getElementById('messageForm').onsubmit;
-        document.getElementById('messageForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const messageText = document.getElementById('messageText').value;
-            const fileInput = document.getElementById('fileInput');
-            const folderInput = document.getElementById('folderInput');
-            const sendBtn = document.querySelector('#messageForm .btn-primary');
-            
-            if (!messageText.trim() && !fileInput.files[0] && !folderInput.files.length && !window.droppedFiles) return;
-            
-            // Show loader
-            const originalContent = sendBtn.innerHTML;
-            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            sendBtn.disabled = true;
-            
-            const formData = new FormData();
-            
-            if (currentGroupId) {
-                formData.append('group_id', currentGroupId);
-                var sendUrl = '/groups/send-message';
-            } else {
-                formData.append('receiver_id', currentChatUserId);
-                var sendUrl = '/chat/send';
-            }
-            
-            if (messageText.trim()) formData.append('message', messageText.trim());
-            
-            // Handle dropped files
-            if (window.droppedFiles && window.droppedFiles.length > 0) {
-                window.droppedFiles.forEach((file, index) => {
-                    formData.append(`folder_files[${index}]`, file);
-                });
-                formData.append('folder_name', `Dropped Files (${window.droppedFiles.length})`);
-            }
-            // Handle folder upload
-            else if (folderInput.files.length > 0) {
-                Array.from(folderInput.files).forEach((file, index) => {
-                    formData.append(`folder_files[${index}]`, file);
-                });
-                formData.append('folder_name', folderInput.files[0].webkitRelativePath.split('/')[0]);
-            }
-            // Handle single file upload
-            else if (fileInput.files[0]) {
-                formData.append('file', fileInput.files[0]);
-            }
-            
-            fetch(sendUrl, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => {
-                        console.error('Server response:', text);
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    });
-                }
-                return response.text().then(text => {
-                    console.log('Server response:', text);
-                    try {
-                        return JSON.parse(text);
-                    } catch (e) {
-                        console.error('Invalid JSON response:', text);
-                        throw new Error('Server returned invalid response');
-                    }
-                });
-            })
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('messageText').value = '';
-                    fileInput.value = '';
-                    folderInput.value = '';
-                    window.droppedFiles = null;
-                    removePreview();
-                    
-                    // Add new message to current chat without refreshing
-                    if (currentChatUserId) {
-                        addMessageToChat(data.message);
-                        moveChatToTop(currentChatUserId, false);
-                    } else if (currentGroupId) {
-                        addMessageToChat(data.message);
-                        moveChatToTop(currentGroupId, true);
-                    }
-                    
-                    // Update unread counts for other users
-                    updateUnreadCounts();
-                    updateGroupUnreadCounts();
-                } else {
-                    console.error('Server error:', data);
-                    alert('Error: ' + (data.error || data.message || 'Upload failed'));
-                }
-            })
-            .catch(error => {
-                console.error('Upload error:', error);
-                alert('Upload failed: ' + error.message);
-            })
-            .finally(() => {
-                // Reset button
-                sendBtn.innerHTML = originalContent;
-                sendBtn.disabled = false;
-            });
-        });
+
 
         // Initialize button states
         document.addEventListener('DOMContentLoaded', function() {
